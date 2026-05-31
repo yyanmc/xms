@@ -1,4 +1,4 @@
-#include "xmsdiskclientgui.h"
+﻿#include "xmsdiskclientgui.h"
 #include <QtWidgets/QApplication>
 #include <QFont>
 //#include "file_manager.h"

@@ -1,4 +1,4 @@
-#include "xfile_manager.h"
+﻿#include "xfile_manager.h"
 #include "xtools.h"
 using namespace std;
 using namespace xdisk;

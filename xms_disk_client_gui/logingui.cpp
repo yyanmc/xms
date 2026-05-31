@@ -1,4 +1,4 @@
-#include "logingui.h"
+﻿#include "logingui.h"
 #include <QMouseEvent>
 #include "xauth_client.h"
 #include <string>

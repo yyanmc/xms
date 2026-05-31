@@ -1,4 +1,4 @@
-#include "login_gui..h"
+﻿#include "login_gui..h"
 #include <QMessageBox>
 #include <string>
 #include <sstream>
@@ -30,18 +30,21 @@ void LoginGUI::Login()
 
 
 
-    XAUTH->LoginReq(username_, password_);
-    this_thread::sleep_for(500ms);
     XLoginRes login;
-    if (!XAuthClient::Get()->GetLoginInfo(username_, &login, 1000))
+    for (int retry = 0; retry < 3; retry++)
     {
-        QMessageBox::information(this, "", QString::fromUtf8("用户名或者密码错误"));
-        return;
+        XAUTH->LoginReq(username_, password_);
+        this_thread::sleep_for(500ms);
+        if (XAuthClient::Get()->GetLoginInfo(username_, &login, 5000))
+        {
+            cout << "login success!" << endl;
+            MCONF->set_login(login);
+            accept();
+            return;
+        }
+        cout << "login retry " << retry + 1 << endl;
     }
-
-    cout << "login success!" << endl;
-    MCONF->set_login(login);
-    accept();
+    QMessageBox::information(this, "", QString::fromUtf8("用户名或者密码错误"));
 }
 LoginGUI::LoginGUI(QDialog *parent)
     : QDialog(parent)

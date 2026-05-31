@@ -1,4 +1,4 @@
-#include "task_list_gui.h"
+﻿#include "task_list_gui.h"
 #include "taskitemgui.h"
 #include "xfile_manager.h"
 #include <QDebug>

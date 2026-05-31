@@ -1,4 +1,4 @@
-#include "config_edit.h"
+﻿#include "config_edit.h"
 #include "xtools.h"
 #include <string>
 #include <QFileDialog>

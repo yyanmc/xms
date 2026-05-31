@@ -1,4 +1,4 @@
-#include "config_gui.h"
+﻿#include "config_gui.h"
 #include "xconfig_client.h"
 #include "config_edit.h"
 #include <QtWidgets/QApplication>

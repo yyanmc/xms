@@ -1,4 +1,4 @@
-#include "config_gui.h"
+﻿#include "config_gui.h"
 #include <QMouseEvent>
 #include <string>
 #include <sstream>
@@ -168,7 +168,7 @@ bool ConfigGui::CheckLogin(std::string ip, int port)
     XAUTH->set_server_ip(ip.c_str());
     XAUTH->set_server_port(port);
     XAUTH->Close();
-    if (!XAUTH->AutoConnect(1))
+    if (!XAUTH->AutoConnect(5))
     {
         AddLog("验证服务连接失败");
         return false;
@@ -212,7 +212,7 @@ void ConfigGui::Refresh()
     MCONF->set_auto_delete(false);
     
     MCONF->Close();
-    if (!MCONF->AutoConnect(1))
+    if (!MCONF->AutoConnect(5))
     {
     //LOGDEBUG("连接配置中心失败!");
         AddLog("连接配置中心失败");

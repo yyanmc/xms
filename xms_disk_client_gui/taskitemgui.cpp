@@ -1,4 +1,4 @@
-#include "taskitemgui.h"
+﻿#include "taskitemgui.h"
 #include "xtools.h"
 #include <string>
 using namespace std;

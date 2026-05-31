@@ -1,4 +1,4 @@
-#include "file_manager.h"
+﻿#include "file_manager.h"
 #include <thread>
 #include "xtools.h"
 #include<fstream>

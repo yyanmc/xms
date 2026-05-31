@@ -1,4 +1,4 @@
-#include "xmsdiskclientgui.h"
+﻿#include "xmsdiskclientgui.h"
 #include <QMouseEvent>
 #include <QMenu>
 #include <QHBoxLayout>

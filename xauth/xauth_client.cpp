@@ -56,13 +56,17 @@ bool XAuthClient::GetLoginInfo(string username, xmsg::XLoginRes *out_info, int t
         }
         return false;
     }
-    // 等待通知或超时
-    login_cv_.wait_for(lock, chrono::milliseconds(timeoue_ms));
-    login_ptr = login_map_.find(username);
-    if (login_ptr != login_map_.end() && login_ptr->second.res() == XLoginRes::OK)
+    // 循环等待，每200ms检查一次，总超时由timeoue_ms控制
+    auto deadline = chrono::steady_clock::now() + chrono::milliseconds(timeoue_ms);
+    while (chrono::steady_clock::now() < deadline)
     {
-        out_info->CopyFrom(login_ptr->second);
-        return true;
+        login_cv_.wait_for(lock, chrono::milliseconds(200));
+        login_ptr = login_map_.find(username);
+        if (login_ptr != login_map_.end() && login_ptr->second.res() == XLoginRes::OK)
+        {
+            out_info->CopyFrom(login_ptr->second);
+            return true;
+        }
     }
     return false;
 }
