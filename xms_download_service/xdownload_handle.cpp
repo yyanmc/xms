@@ -4,11 +4,7 @@
 using namespace xmsg;
 using namespace xdisk;
 using namespace std;
-#ifdef _WIN32
-#define DIR_ROOT "./server_root/"
-#else
-#define DIR_ROOT "/root/xms/"
-#endif
+#define DIR_ROOT "/home/yan1/xms/server_root/"
 #define FILE_INFO_NAME_PRE ".info_"
 #define FILE_SLICE_BYTE 100000000 
 

@@ -3,7 +3,7 @@ SRC=$(wildcard x*.cc)
 OBJS=$(patsubst %.cc,%.o,$(SRC) ) 
 INCLUDE_PATH=/usr/include/xms
 CPPFLAGS= -fPIC -g -I$(INCLUDE_PATH)
-LIBS=-levent -lpthread -lxcom -lprotobuf -lssl -lregister_client 
+LIBS=-levent -lpthread -lxcom -lprotobuf -lssl
 INSTALL_PATH=/usr/lib/
 exist = $(shell if [ ! -d $(INCLUDE_PATH) ]; then mkdir $(INCLUDE_PATH); fi;)
 $(TARGET):$(OBJS) 

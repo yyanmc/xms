@@ -281,10 +281,10 @@ void XConfigClient::LoadConfigRes(xmsg::XMsgHead *head, XMsg *msg)
 class ConfError:public MultiFileErrorCollector
 {
 public:
-    void RecordError(absl::string_view filename, int line, int column,
-        absl::string_view message) override
+    void AddError(const std::string& filename, int line, int column,
+        const std::string& message) override
     {
-        stringstream ss;
+        std::stringstream ss;
         ss << filename << "|" << line << "|" << column << "|" << message;
         LOGDEBUG(ss.str().c_str());
     }

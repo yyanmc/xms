@@ -4,11 +4,7 @@
 using namespace xmsg;
 using namespace xdisk;
 using namespace std;
-#ifdef _WIN32
-#define DIR_ROOT "./server_root/"
-#else
-#define DIR_ROOT "/mnt/xms/"
-#endif
+#define DIR_ROOT "/home/yan1/xms/server_root/"
 void XUploadHandle::UploadFileReq(xmsg::XMsgHead *head, XMsg *msg)
 {
     //验证用户权限

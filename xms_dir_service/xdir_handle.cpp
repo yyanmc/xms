@@ -1,11 +1,7 @@
 #include "xdir_handle.h"
 #include "xtools.h"
 #include "xlog_client.h"
-#ifdef _WIN32
-#define DIR_ROOT "./server_root/"
-#else
-#define DIR_ROOT "/mnt/xms/"
-#endif
+#define DIR_ROOT "/home/yan1/xms/server_root/"
 #define FILE_INFO_NAME_PRE ".info_"
 //10G
 #define USER_SPACE 1073741824

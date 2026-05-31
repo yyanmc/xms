@@ -8,29 +8,28 @@ using namespace std;
 void XUploadServer::main(int argc, char *argv[])
 {
     XUploadHandle::RegMsgCallback();
-    LOGDEBUG("xms_upload_service register_ip register_port  service_port ");
+    LOGDEBUG("xms_upload_service register_ip register_port service_port [service_ip]");
 
     int service_port = UPLOAD_PORT;
     int register_port = REGISTER_PORT;
-    //string register_ip = "127.0.0.1";
-
     string register_ip = XGetHostByName(API_REGISTER_SERVER_NAME);
+    string service_ip = "";  // empty = use connection source IP
+
     if (argc > 1)
         register_ip = argv[1];
     if (argc > 2)
         register_port = atoi(argv[2]);
     if (argc > 3)
         service_port = atoi(argv[3]);
+    if (argc > 4)
+        service_ip = argv[4];
 
     set_server_port(service_port);
 
-    //注册到注册中心
-    //XRegisterClient::Get()->RegisterServer(UPLOAD_NAME, service_port, 0, true);
-
-
     XRegisterClient::Get()->set_server_ip(register_ip.c_str());
     XRegisterClient::Get()->set_server_port(register_port);
-    XRegisterClient::Get()->RegisterServer(UPLOAD_NAME, service_port, 0,true);
+    XRegisterClient::Get()->RegisterServer(UPLOAD_NAME, service_port,
+        service_ip.empty() ? 0 : service_ip.c_str(), true);
     auto log = XLogClient::Get();
     log->set_service_name(UPLOAD_NAME);
     
