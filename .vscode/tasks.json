@@ -1,0 +1,139 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build-all",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [
+                "/p:Configuration=Debug",
+                "/p:Platform=Win32",
+                "/p:PlatformToolset=v143",
+                "/t:Rebuild"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        },
+        {
+            "label": "build-gateway",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [
+                "${workspaceFolder}/xms_gateway/xms_gateway.vcxproj",
+                "/p:Configuration=Debug",
+                "/p:Platform=Win32"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        },
+        {
+            "label": "build-auth",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [
+                "${workspaceFolder}/xauth/xauth.vcxproj",
+                "/p:Configuration=Debug",
+                "/p:Platform=Win32"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        },
+        {
+            "label": "build-register-server",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [
+                "${workspaceFolder}/register_server/register_server.vcxproj",
+                "/p:Configuration=Debug",
+                "/p:Platform=Win32"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        },
+        {
+            "label": "build-xplatform",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [
+                "${workspaceFolder}/xplatform/xplatfrom.vcxproj",
+                "/p:Configuration=Debug",
+                "/p:Platform=Win32"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        },
+        {
+            "label": "generate-protobuf",
+            "type": "shell",
+            "command": "cd ${workspaceFolder}/xplatform && protoc.exe -I=./ --cpp_out=./ xmsg_com.proto && protoc.exe -I=./ --cpp_out=./ xmsg_type.proto",
+            "group": "build",
+            "problemMatcher": [],
+            "options": {
+                "shell": {
+                    "executable": "cmd.exe",
+                    "args": ["/d", "/c"]
+                }
+            }
+        },
+        {
+            "label": "build-config-gui",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [
+                "${workspaceFolder}/config_gui/config_gui.vcxproj",
+                "/p:Configuration=Debug",
+                "/p:Platform=Win32"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$msCompile"
+            ],
+            "dependsOn": [
+                "build-xplatform"
+            ]
+        },
+        {
+            "label": "build-disk-client-gui",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [
+                "${workspaceFolder}/xms_disk_client_gui/xms_disk_client_gui.vcxproj",
+                "/p:Configuration=Debug",
+                "/p:Platform=Win32"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$msCompile"
+            ],
+            "dependsOn": [
+                "build-xplatform"
+            ]
+        },
+        {
+            "label": "clean-all",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [
+                "/t:Clean"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        }
+    ]
+}

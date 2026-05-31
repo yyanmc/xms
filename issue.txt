@@ -1,0 +1,128 @@
+项目问题清单
+================================================================================
+检查日期: 2026-05-24
+项目路径: D:\Code\cpp\C++微服务架构及安全云盘项目\xms0.1.1
+
+
+一、文件缺失/遗漏
+================================================================================
+
+1. xms_add_user 无构建配置
+   - 文件: xms_add_user/xms_add_user.cpp
+   - 问题: 该独立工具没有 .vcxproj 和 .sln 文件，只有 makefile
+   - 影响: 无法通过 VS/MSBuild 构建，仅支持 Linux make 编译
+
+2. xms_disk_client_gui.vcxproj 遗漏 4 个文件
+   - 文件: xms_disk_client_gui/xms_disk_client_gui.vcxproj
+   - 遗漏:
+     - file_manager.cpp / file_manager.h (被 xupload_proxy.cpp 引用)
+     - xupload_proxy.cpp / xupload_proxy.h (XUploadProxy 类定义)
+   - 影响: Qt 项目编译时 MOC 无法处理 Q_OBJECT 宏
+
+3. 4 个服务项目无独立 .sln
+   - xms_gateway/
+   - xms_dir_service/
+   - xms_upload_service/
+   - xms_download_service/
+   - 问题: 只有 .vcxproj 没有独立 .sln，被包含在 xms_disk_client_gui.sln 中
+   - 影响: 无法单独打开编译
+
+
+二、代码逻辑/Bug 问题
+================================================================================
+
+4. xmsg.h - new[] / delete[] 不匹配 (未定义行为)
+   - 文件: xplatform/xmsg.h (第 77-78 行, 第 96-98 行)
+   - XMsg::Alloc() 使用 new char[s]
+   - XMsg::Clear() 和 Alloc 内部使用 delete data (应为 delete[] data)
+   - 严重: 高 - 未定义行为，可能导致堆损坏或内存泄漏
+
+5. xmsg_event.cpp - pb_head_ 内存泄漏
+   - 文件: xplatform/xmsg_event.cpp (第 136-138 行)
+   - XMsgEvent::RecvMsg() 中 pb_head_ = new XMsgHead() 只分配不释放
+   - XMsgEvent::Clear() 不清除 pb_head_
+   - XMsgEvent 没有析构函数释放 pb_head_
+   - 严重: 高 - 每个连接泄漏一个 protobuf 消息头对象
+
+6. xthread.cpp - CPU 忙等待
+   - 文件: xplatform/xthread.cpp (第 155-159 行)
+   - Main() 中使用 event_base_loop(base_, EVLOOP_NONBLOCK) + sleep_for(1ms) 轮询
+   - 应使用 event_base_dispatch(base_) (第 163 行已注释)
+   - 严重: 高 - 导致高 CPU 占用，每秒 1000 次轮询
+
+7. xthread.cpp - 非原子退出标志
+   - 文件: xplatform/xthread.cpp (第 174 行)
+   - is_exit_ 是普通 bool，被多线程读写无保护
+   - 应使用 std::atomic<bool>
+   - 严重: 中 - 可能导致线程无法正常退出
+
+8. xthread.cpp - NOLOCK 标志
+   - 文件: xplatform/xthread.cpp (第 124 行)
+   - event_config_set_flag(ev_conf, EVENT_BASE_FLAG_NOLOCK) 禁用线程安全锁
+   - 严重: 中 - 多线程访问同一 event_base 可能导致崩溃
+
+9. xthread_pool.cpp - 手动锁非 RAII
+   - 文件: xplatform/xthread_pool.cpp (第 29-34 行, 第 78-80 行)
+   - ExitAllThread() 和 Init() 中手动 lock()/unlock()
+   - 应使用 std::lock_guard 自动管理锁
+   - 严重: 中 - 异常发生时锁不会自动释放
+
+10. xservice_handle.h - 析构函数非虚
+    - 文件: xplatform/xservice_handle.h (第 9 行)
+    - XServiceHandle 继承自 XMsgEvent (有虚函数) 但析构函数非虚
+    - 通过基类指针删除派生类对象是为未定义行为
+    - 严重: 中
+
+11. LXMysql.cpp - SQL 注入风险
+    - 文件: LXMysql/LXMysql.cpp (第 292-338 行, 第 439-461 行)
+    - GetInsertSql() 和 GetUpdateSql() 直接拼接用户输入到 SQL
+    - 没有转义特殊字符，而 InsertBin() 使用参数化查询 (安全)
+    - 严重: 高 - SQL 注入安全漏洞
+
+12. LXMysql.cpp - 密码明文存储
+    - 文件: LXMysql/LXMysql.cpp (第 70-104 行)
+    - InputDBConfig() 将 MySQL 密码以二进制形式写入 xms_mysql_init.conf
+    - 未加密，可被直接读取
+    - 严重: 中 - 凭证泄露风险
+
+13. xapplication.cpp - main() 为空存根
+    - 文件: xplatform/xapplication.cpp (第 22-25 行)
+    - XApplication::main() 方法体完全为空，只有注释"注册"
+    - 所有静态成员变量从未被初始化
+    - 严重: 中 - 核心初始化逻辑未实现
+
+14. xrouter_server.cpp - SSL 上下文小泄漏
+    - 文件: xms_gateway/xrouter_server.cpp (第 28-29 行)
+    - new XSSLCtx() 分配，服务结束时未释放
+    - 严重: 低
+
+15. 重复的 #include
+    - xauth/xauth_server.cpp (第 8 行和第 20 行): 两次 #include "xtools.h"
+    - xplatform/xthread_pool.cpp (第 3 行和第 6 行): 两次 #include <thread>
+    - 严重: 低
+
+
+三、项目配置/构建问题
+================================================================================
+
+16. .sln 中 Qt5Version 应为 Qt6Version
+    - config_gui/config_gui.sln (第 53 行)
+    - xms_disk_client_gui/xms_disk_client_gui.sln (第 81 行)
+    - 当前使用 Qt 6.11.0 但配置为 Qt5Version = msvc2022
+    - 虽然 Qt VS Tools 兼容此设置，但应更新为 Qt6Version
+
+17. Qt VS Tools 扩展未安装
+    - Qt MsBuild (qt.props/qt.targets) 未安装
+    - config_gui 和 xms_disk_client_gui 的 Qt 项目无法构建
+    - 需在 Visual Studio 中安装 Qt VS Tools 扩展
+
+18. Qt 6.11.0 为 64 位，项目目标 Win32
+    - Qt 安装路径: D:\Code\qt\6.11.0\msvc2022_64 (64-bit)
+    - 项目配置为 Win32 平台
+    - 构建 Qt GUI 项目时可能存在平台不匹配
+
+19. LXMysql Release|Win32 库路径不一致
+    - LXMysql/LXMysql.vcxproj (第 148 行)
+    - Release|Win32 的 AdditionalLibraryDirectories 为 ..\..\x86
+    - 其它配置均为 ..\..\lib\x86
+    - 可能是笔误

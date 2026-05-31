@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{4C6D16B6-D6BF-48B9-A654-55432E4F00AD}</ProjectGuid>
+    <Keyword>QtVS_v302</Keyword>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <QtMsBuild Condition="'$(QtMsBuild)'=='' OR !Exists('$(QtMsBuild)\qt.targets')">$(MSBuildProjectDirectory)\QtMsBuild</QtMsBuild>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Target Name="QtMsBuildNotFound" BeforeTargets="CustomBuild;ClCompile" Condition="!Exists('$(QtMsBuild)\qt.targets') or !Exists('$(QtMsBuild)\qt.props')">
+    <Message Importance="High" Text="QtMsBuild: could not locate qt.targets, qt.props; project may not build correctly." />
+  </Target>
+  <ImportGroup Label="ExtensionSettings" />
+  <ImportGroup Label="Shared" />
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>..\..\bin\x86</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>D:\Code\cpp\C++微服务架构及安全云盘项目\xms0.1.1\bin\x64\</OutDir>
+  </PropertyGroup>
+  <ImportGroup Condition="Exists('$(QtMsBuild)\qt_defaults.props')">
+    <Import Project="$(QtMsBuild)\qt_defaults.props" />
+  </ImportGroup>
+  <PropertyGroup Label="QtSettings" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <QtInstall>msvc2022</QtInstall>
+    <QtModules>core;gui;widgets</QtModules>
+  </PropertyGroup>
+  <PropertyGroup Label="QtSettings" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <QtInstall>msvc2022</QtInstall>
+    <QtModules>core;gui;widgets</QtModules>
+  </PropertyGroup>
+  <PropertyGroup Label="QtSettings" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <QtInstall>D:\Code\qt\6.11.0\msvc2022_64</QtInstall>
+    <QtModules>core;gui;widgets</QtModules>
+  </PropertyGroup>
+  <ImportGroup Condition="Exists('$(QtMsBuild)\qt.props')">
+    <Import Project="$(QtMsBuild)\qt.props" />
+  </ImportGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>Disabled</Optimization>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <AdditionalIncludeDirectories>..\..\include;..\xplatform;..\xms_dir_service;..\xdisk_pb;.\;..\xauth;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <OutputFile>$(OutDir)\$(ProjectName).exe</OutputFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>..\..\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libprotobufd.lib;xplatform_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat />
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\$(ProjectName).exe</OutputFile>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MaxSpeed</Optimization>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <PreprocessorDefinitions>NDEBUG;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\include;..\xplatform;..\xms_dir_service;..\xdisk_pb;.\;..\xauth;D:\Code\cpp\xms\src\out64\libevent\include;D:\Code\cpp\xms\src\out64\openssl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <OutputFile>$(OutDir)\$(ProjectName).exe</OutputFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>D:\Code\protobuf\lib;D:\Code\cpp\xms\src\out64\libevent\lib;D:\Code\cpp\xms\src\out64\openssl\lib;D:\Code\cpp\xms\src\out64\zlib\lib;..\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>xplatform.lib;libprotobuf.lib;abseil_dll.lib;absl_log_internal_message.lib;absl_log_internal_log_sink_set.lib;absl_log_globals.lib;absl_log_severity.lib;absl_log_internal_nullguard.lib;absl_log_sink.lib;absl_log_initialize.lib;absl_log_internal_globals.lib;absl_log_internal_format.lib;absl_strings.lib;absl_str_format_internal.lib;absl_string_view.lib;absl_strings_internal.lib;absl_base.lib;absl_spinlock_wait.lib;absl_synchronization.lib;absl_time.lib;absl_time_zone.lib;absl_status.lib;absl_statusor.lib;absl_raw_logging_internal.lib;absl_throw_delegate.lib;absl_stacktrace.lib;absl_symbolize.lib;absl_debugging_internal.lib;absl_demangle_internal.lib;absl_malloc_internal.lib;absl_int128.lib;absl_civil_time.lib;absl_strerror.lib;absl_hash.lib;absl_low_level_hash.lib;absl_city.lib;absl_raw_hash_set.lib;absl_hashtablez_sampler.lib;absl_random_internal_platform.lib;absl_random_seed_sequences.lib;absl_random_internal_seed_material.lib;absl_random_internal_randen.lib;absl_random_internal_randen_slow.lib;absl_random_internal_randen_hwaes.lib;absl_random_internal_randen_hwaes_impl.lib;absl_random_distributions.lib;absl_log_internal_check_op.lib;absl_log_internal_conditions.lib;absl_log_internal_fnmatch.lib;absl_log_internal_proto.lib;absl_log_internal_structured_proto.lib;absl_log_flags.lib;absl_flags_commandlineflag.lib;absl_flags_commandlineflag_internal.lib;absl_flags_config.lib;absl_flags_internal.lib;absl_flags_marshalling.lib;absl_flags_parse.lib;absl_flags_private_handle_accessor.lib;absl_flags_program_name.lib;absl_flags_reflection.lib;absl_flags_usage.lib;absl_flags_usage_internal.lib;absl_vlog_config_internal.lib;absl_cord.lib;absl_cord_internal.lib;absl_cordz_functions.lib;absl_cordz_handle.lib;absl_cordz_info.lib;absl_cordz_sample_token.lib;absl_crc_cord_state.lib;absl_crc_cpu_detect.lib;absl_crc_internal.lib;absl_crc32c.lib;absl_examine_stack.lib;absl_die_if_null.lib;absl_decode_rust_punycode.lib;absl_demangle_rust.lib;absl_scoped_set_env.lib;absl_periodic_sampler.lib;absl_random_internal_entropy_pool.lib;absl_random_seed_gen_exception.lib;absl_tracing_internal.lib;absl_utf8_for_code_point.lib;absl_graphcycles_internal.lib;absl_kernel_timeout_internal.lib;absl_failure_signal_handler.lib;absl_leak_check.lib;absl_poison.lib;absl_random_internal_distribution_test_util.lib;libevent.lib;libevent_core.lib;libevent_extras.lib;libevent_openssl.lib;libssl.lib;libcrypto.lib;zlib.lib;ws2_32.lib;crypt32.lib;iphlpapi.lib;utf8_range.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\xauth\xauth_client.cpp" />
+    <ClCompile Include="..\xdisk_pb\xms_disk_client_gui.pb.cc" />
+    <ClCompile Include="..\xplatform\xmsg_com.pb.cc" />
+    <ClCompile Include="..\xplatform\xmsg_type.pb.cc" />
+    <ClCompile Include="filepassword.cpp" />
+    <ClCompile Include="logingui.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="taskitemgui.cpp" />
+    <ClCompile Include="task_list_gui.cpp" />
+    <ClCompile Include="xdownload_client.cpp" />
+    <ClCompile Include="xfile_manager.cpp" />
+    <ClCompile Include="xget_dir_client.cpp" />
+    <ClCompile Include="xmsdiskclientgui.cpp" />
+    <ClCompile Include="xms_file_manager.cpp" />
+    <ClCompile Include="xupload_client.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="xmsdiskclientgui.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <QtUic Include="filepassword.ui" />
+    <QtUic Include="logingui.ui" />
+    <QtUic Include="taskitemgui.ui" />
+    <QtUic Include="task_list_gui.ui" />
+    <QtUic Include="xmsdiskclientgui.ui" />
+  </ItemGroup>
+  <ItemGroup>
+    <QtRcc Include="xmsdiskclientgui.qrc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="xms_disk_client_gui.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\xdisk_pb\xms_disk_client_gui.proto" />
+    <None Include="build_msg.bat" />
+    <None Include="云盘客户端设计.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\xauth\xauth_client.h" />
+    <ClInclude Include="..\xdisk_pb\xms_disk_client_gui.pb.h" />
+    <QtMoc Include="task_list_gui.h" />
+    <QtMoc Include="taskitemgui.h" />
+    <QtMoc Include="xfile_manager.h" />
+    <QtMoc Include="logingui.h" />
+    <ClInclude Include="..\xplatform\xmsg_com.pb.h" />
+    <ClInclude Include="..\xplatform\xmsg_type.pb.h" />
+    <QtMoc Include="filepassword.h" />
+    <ClInclude Include="xdownload_client.h" />
+    <ClInclude Include="xget_dir_client.h" />
+    <ClInclude Include="xms_file_manager.h" />
+    <ClInclude Include="xupload_client.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">
+    <Import Project="$(QtMsBuild)\qt.targets" />
+  </ImportGroup>
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

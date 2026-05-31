@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>XMS 微服务架构云盘 — 部署方案</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; padding: 20px; }
+  h1 { text-align: center; margin: 20px 0; font-size: 28px; color: #1a1a2e; }
+  h1 small { display: block; font-size: 14px; color: #666; font-weight: normal; margin-top: 4px; }
+  h2 { margin: 30px 0 15px; padding: 10px 15px; background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff; border-radius: 8px; font-size: 20px; }
+  h2.green { background: linear-gradient(135deg, #27ae60, #1e8449); }
+  h2.blue { background: linear-gradient(135deg, #2980b9, #1a5276); }
+  h2.orange { background: linear-gradient(135deg, #e67e22, #d35400); }
+  h2.purple { background: linear-gradient(135deg, #8e44ad, #6c3483); }
+  h2.teal { background: linear-gradient(135deg, #16a085, #0e6655); }
+  h3 { margin: 20px 0 10px; color: #2c3e50; border-left: 4px solid #e74c3c; padding-left: 10px; }
+  .section { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  .mermaid { background: #fafafa; padding: 15px; border-radius: 8px; overflow-x: auto; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+  .card { background: #f8f9fe; border: 1px solid #e8ecf4; border-radius: 8px; padding: 15px; }
+  .card .title { font-weight: bold; font-size: 15px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .card .title .step { background: #e74c3c; color: #fff; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+  .card .content { color: #555; font-size: 13px; line-height: 1.6; }
+  .card .content code { background: #eef; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 14px; }
+  th { background: #2c3e50; color: #fff; padding: 8px 12px; text-align: left; }
+  td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+  tr:hover td { background: #f0f4ff; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; color: #fff; }
+  .tag-red { background: #e74c3c; }
+  .tag-green { background: #27ae60; }
+  .tag-blue { background: #2980b9; }
+  .tag-orange { background: #e67e22; }
+  .tag-purple { background: #8e44ad; }
+  .code-block { background: #1e1e2e; color: #a0e0ff; padding: 15px; border-radius: 8px; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; overflow-x: auto; margin: 10px 0; line-height: 1.5; }
+  .code-block .comment { color: #6a9955; }
+  .code-block .keyword { color: #c586c0; }
+  .code-block .string { color: #ce9178; }
+  .checklist { list-style: none; padding: 0; }
+  .checklist li { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+  .checklist li::before { content: "☐ "; color: #e74c3c; font-weight: bold; }
+  .checklist li.done::before { content: "☑ "; color: #27ae60; }
+  .note { background: #d1ecf1; border: 1px solid #17a2b8; border-radius: 8px; padding: 10px 15px; margin: 10px 0; font-size: 13px; color: #0c5460; }
+  .warn { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 10px 15px; margin: 10px 0; font-size: 13px; color: #856404; }
+  .footer { text-align: center; color: #888; font-size: 13px; margin: 30px 0; }
+  @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<h1>XMS 安全云盘 — 部署方案<small>C++ Microservices Cloud Disk Deployment — 2026-05-27</small></h1>
+
+<!-- ===== 环境要求 ===== -->
+<div class="section">
+<h2>1. 环境要求</h2>
+<div class="grid-2">
+<div>
+<h3>开发工具</h3>
+<table>
+<tr><td>Visual Studio</td><td>2022 Professional/Community</td></tr>
+<tr><td>工具集</td><td>MSVC v143 (VS 2022)</td></tr>
+<tr><td>Qt 版本</td><td>6.11.0 MSVC 2022 64-bit</td></tr>
+<tr><td>CMake</td><td>3.16+ (VS 自带)</td></tr>
+<tr><td>平台</td><td>Windows 10/11 x86/x64</td></tr>
+</table>
+</div>
+<div>
+<h3>运行时依赖</h3>
+<table>
+<tr><td>MySQL Server</td><td>5.7+ / 8.0</td></tr>
+<tr><td>Visual C++ Redistributable</td><td>VS 2022 (vc_redist.x86.exe)</td></tr>
+<tr><td>OpenSSL</td><td>预编译库 (DLL)</td></tr>
+<tr><td>hosts 配置</td><td>域名 → IP 映射</td></tr>
+</table>
+</div>
+</div>
+
+<h3>hosts 文件配置</h3>
+<div class="code-block">
+<span class="comment"># 文件位置: C:\Windows\System32\drivers\etc\hosts</span><br/>
+<span class="comment"># 单机部署 (127.0.0.1) 或分布式部署 (实际IP)</span><br/>
+127.0.0.1  xms_gateway_server<br/>
+127.0.0.1  xms_register_server
+</div>
+</div>
+
+<!-- ===== 依赖库结构 ===== -->
+<div class="section">
+<h2 class="purple">2. 第三方依赖库结构</h2>
+<div class="mermaid">
+graph LR
+    subgraph PROJ["项目目录 xms0.1.1/"]
+        LINK_INCLUDE["include/ → 链接到<br/>D:/Code/cpp/xms/include"]
+        LINK_LIB["lib/x86/ → 链接到<br/>D:/Code/cpp/xms/lib"]
+        LINK_MYSQL["mysql_code/ → 链接到<br/>D:/Code/cpp/xms/mysql_code"]
+    end
+
+    subgraph DEPS["D:/Code/cpp/xms/ (外部依赖)"]
+        INC["include/<br/>libevent / protobuf / openssl<br/>zlib / absl / upb"]
+        LIB["lib/<br/>libevent.lib / libprotobuf.lib<br/>libssl.lib / libcrypto.lib<br/>zlib.lib / absl_*.lib"]
+        BIN["bin/<br/>libprotobuf.dll<br/>xplatform_d.dll"]
+        MYSQL["mysql_code/<br/>bin/libmysql.dll<br/>lib/libmysql.lib"]
+    end
+
+    LINK_INCLUDE -.->|目录链接| INC
+    LINK_LIB -.->|目录链接| LIB
+    LINK_MYSQL -.->|目录链接| MYSQL
+</div>
+</div>
+
+<!-- ===== 构建顺序 ===== -->
+<div class="section">
+<h2 class="orange">3. 构建流程</h2>
+<div class="mermaid">
+graph TB
+    subgraph BUILD["构建顺序 & 依赖关系"]
+        direction TB
+        LXM["① LXMysql<br/><span style='font-size:11px'>静态库 (.lib)</span>"]
+        XPF["② xplatform<br/><span style='font-size:11px'>静态库 (.lib)</span>"]
+
+        RS["③ register_server<br/><span style='font-size:11px'>注册中心 EXE</span>"]
+        CS["④ config_server<br/><span style='font-size:11px'>配置中心 EXE</span>"]
+        AS["⑤ xauth_server<br/><span style='font-size:11px'>鉴权服务 EXE</span>"]
+        LS["⑥ xlog_server<br/><span style='font-size:11px'>日志服务 EXE</span>"]
+
+        GW["⑦ xms_gateway<br/><span style='font-size:11px'>API网关 EXE</span>"]
+        DIR["⑧ xms_dir_service<br/><span style='font-size:11px'>目录服务 EXE</span>"]
+        UP["⑨ xms_upload_service<br/><span style='font-size:11px'>上传服务 EXE</span>"]
+        DOWN["⑩ xms_download_service<br/><span style='font-size:11px'>下载服务 EXE</span>"]
+
+        GUI["⑪ xms_disk_client_gui<br/><span style='font-size:11px'>云盘客户端(Qt)</span>"]
+        CGUI["⑫ config_gui<br/><span style='font-size:11px'>配置管理(Qt)</span>"]
+        CCLI["⑬ config_client<br/><span style='font-size:11px'>配置CLI测试</span>"]
+        RCLI["⑭ register_client<br/><span style='font-size:11px'>注册CLI测试</span>"]
+    end
+
+    XPF --> RS
+    XPF --> CS
+    XPF --> AS
+    XPF --> LS
+    XPF --> GW
+    XPF --> DIR
+    XPF --> UP
+    XPF --> DOWN
+    XPF --> GUI
+    XPF --> CGUI
+    XPF --> CCLI
+    XPF --> RCLI
+
+    LXM --> CS
+    LXM --> AS
+    LXM --> LS
+</div>
+
+<h3>一键构建脚本</h3>
+<div class="code-block">
+<span class="comment">REM 在 VS2022 Developer Command Prompt 中执行</span><br/><br/>
+<span class="keyword">set</span> XMS_ROOT=D:\Code\cpp\C++微服务架构及安全云盘项目\xms0.1.1<br/>
+<span class="keyword">set</span> BUILD_CFG=Debug<br/>
+<span class="keyword">set</span> BUILD_PLAT=Win32<br/><br/>
+<span class="comment">REM 1. 构建基础库</span><br/>
+msbuild %XMS_ROOT%\LXMysql\LXMysql.vcxproj /p:Configuration=%BUILD_CFG% /p:Platform=%BUILD_PLAT%<br/>
+msbuild %XMS_ROOT%\xplatform\xplatfrom.vcxproj /p:Configuration=%BUILD_CFG% /p:Platform=%BUILD_PLAT%<br/><br/>
+<span class="comment">REM 2. 构建所有服务和服务端</span><br/>
+<span class="keyword">for</span> %%p <span class="keyword">in</span> (<br/>
+&nbsp;&nbsp;register_server config_server xauth_server xlog_server<br/>
+&nbsp;&nbsp;xms_gateway xms_dir_service xms_upload_service<br/>
+&nbsp;&nbsp;xms_download_service config_client register_client<br/>
+) <span class="keyword">do</span> (<br/>
+&nbsp;&nbsp;msbuild %XMS_ROOT%\%%p\%%p.vcxproj /p:Configuration=%BUILD_CFG% /p:Platform=%BUILD_PLAT%<br/>
+)
+</div>
+</div>
+
+<!-- ===== 部署目录结构 ===== -->
+<div class="section">
+<h2 class="green">4. 部署目录结构</h2>
+<div class="grid-2">
+<div>
+<div class="code-block">
+D:\xms_deploy\<br/>
+├─ <span class="keyword">bin\</span>                    <span class="comment"># 可执行文件 + DLL</span><br/>
+│  ├─ register_server.exe<br/>
+│  ├─ config_server.exe<br/>
+│  ├─ xauth_server.exe<br/>
+│  ├─ xlog_server.exe<br/>
+│  ├─ xms_gateway.exe<br/>
+│  ├─ xms_dir_service.exe<br/>
+│  ├─ xms_upload_service.exe<br/>
+│  ├─ xms_download_service.exe<br/>
+│  ├─ libprotobuf.dll<br/>
+│  ├─ libssl.dll / libcrypto.dll<br/>
+│  └─ libmysql.dll<br/>
+├─ <span class="keyword">conf\</span>                    <span class="comment"># 配置文件</span><br/>
+│  └─ xms.ini<br/>
+├─ <span class="keyword">data\</span>                    <span class="comment"># 数据目录</span><br/>
+│  ├─ upload\              <span class="comment"># 上传文件</span><br/>
+│  ├─ download\            <span class="comment"># 下载缓存</span><br/>
+│  └─ logs\                <span class="comment"># 本地日志</span><br/>
+├─ <span class="keyword">scripts\</span>                  <span class="comment"># 启动脚本</span><br/>
+│  ├─ start_all.bat<br/>
+│  ├─ stop_all.bat<br/>
+│  └─ install_db.bat<br/>
+└─ <span class="keyword">cert\</span>                    <span class="comment"># SSL 证书 (可选)</span><br/>
+&nbsp;&nbsp;&nbsp;├─ server.crt<br/>
+&nbsp;&nbsp;&nbsp;└─ server.key
+</div>
+</div>
+<div>
+<div class="note">
+  <strong>运行时 DLL 清单:</strong><br/>
+  - libprotobuf.dll  (必须，所有服务需要)<br/>
+  - xplatform_d.dll  (如果构建为 DLL)<br/>
+  - libssl.dll + libcrypto.dll (OpenSSL)<br/>
+  - libmysql.dll (config/auth/log 服务)<br/>
+  - Qt6Core/Gui/Widgets.dll (GUI 客户端)<br/>
+  - MSVC CRT DLLs (系统自带)
+</div>
+<div class="warn">
+  <strong>重要:</strong> 所有 DLL 必须放在 exe 同目录或系统 PATH 中，否则服务启动会报错。
+</div>
+</div>
+</div>
+</div>
+
+<!-- ===== 服务启动顺序 ===== -->
+<div class="section">
+<h2 class="blue">5. 服务启动流程</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Admin as 运维
+    participant DNS as hosts 文件
+    participant MySQL as MySQL Server
+    participant Reg as register_server<br/>端口 20018
+    participant Config as config_server<br/>端口 20019
+    participant Auth as xauth_server<br/>端口 20020
+    participant Log as xlog_server<br/>端口 20030
+    participant Biz as 业务服务<br/>Dir/Upload/Download
+    participant GW as xms_gateway<br/>端口 20010
+    participant Client as 桌面客户端
+
+    Admin->>DNS: 配置域名→IP映射
+    Admin->>MySQL: 创建数据库 (xms_config/auth/log)
+
+    Note over Reg: 第一步：注册中心必须最先启动
+    Admin->>Reg: 启动 register_server.exe
+    Reg-->>Admin: 监听端口 20018
+
+    Note over Config: 第二步：配置中心依赖注册中心
+    Admin->>Config: 启动 config_server.exe
+    Config->>Reg: 注册自身(config, ip, port)
+    Config->>MySQL: 连接数据库
+    Config-->>Admin: 监听端口 20019
+
+    Note over Auth,Log: 第三步：基础设施服务
+    Admin->>Auth: 启动 xauth_server.exe
+    Auth->>Reg: 注册自身(auth, ip, port)
+    Auth->>MySQL: 连接数据库
+    Auth-->>Admin: 监听端口 20020
+
+    Admin->>Log: 启动 xlog_server.exe
+    Log->>Reg: 注册自身(xlog, ip, port)
+    Log->>MySQL: 连接数据库
+    Log-->>Admin: 监听端口 20030
+
+    Note over Biz: 第四步：业务服务
+    Admin->>Biz: 启动 dir/upload/download 服务
+    Biz->>Reg: 注册自身
+    Biz-->>Admin: 监听端口
+
+    Note over GW: 第五步：网关最后启动
+    Admin->>GW: 启动 xms_gateway.exe
+    GW->>Reg: 注册自身(gw, ip, port)
+    GW->>Reg: 获取所有服务列表
+    GW-->>Admin: 监听端口 20010
+
+    Note over Client: 第六步：客户端连接
+    Client->>GW: 连接网关, 登录认证
+    GW->>Auth: 鉴权
+    Auth-->>GW: 登录成功
+    GW-->>Client: 返回token
+</div>
+
+<h3>启动脚本 (start_all.bat)</h3>
+<div class="code-block">
+@echo off<br/>
+set DEPLOY_DIR=D:\xms_deploy<br/>
+set PATH=%DEPLOY_DIR%\bin;%PATH%<br/><br/>
+echo [1/9] 启动注册中心...<br/>
+start "register_server" %DEPLOY_DIR%\bin\register_server.exe<br/>
+timeout /t 3<br/><br/>
+echo [2/9] 启动配置中心...<br/>
+start "config_server" %DEPLOY_DIR%\bin\config_server.exe<br/>
+timeout /t 2<br/><br/>
+echo [3/9] 启动鉴权服务...<br/>
+start "auth_server" %DEPLOY_DIR%\bin\xauth_server.exe<br/>
+timeout /t 2<br/><br/>
+echo [4/9] 启动日志服务...<br/>
+start "log_server" %DEPLOY_DIR%\bin\xlog_server.exe<br/>
+timeout /t 2<br/><br/>
+echo [5/9] 启动目录服务...<br/>
+start "dir_service" %DEPLOY_DIR%\bin\xms_dir_service.exe<br/>
+timeout /t 2<br/><br/>
+echo [6-7/9] 启动上传/下载服务...<br/>
+start "upload_service" %DEPLOY_DIR%\bin\xms_upload_service.exe<br/>
+start "download_service" %DEPLOY_DIR%\bin\xms_download_service.exe<br/>
+timeout /t 2<br/><br/>
+echo [8/9] 启动API网关...<br/>
+start "gateway" %DEPLOY_DIR%\bin\xms_gateway.exe<br/>
+timeout /t 2<br/><br/>
+echo [9/9] 所有服务已启动!<br/>
+echo 网关端口: 20010
+</div>
+</div>
+
+<!-- ===== 分布式部署 ===== -->
+<div class="section">
+<h2 class="teal">6. 分布式部署方案</h2>
+<div class="mermaid">
+graph TB
+    subgraph 注册中心服务器["Server A - 注册中心<br/>192.168.1.10"]
+        REG["register_server<br/>端口 20018"]
+        MYSQL_REG["MySQL"]
+    end
+
+    subgraph 配置中心服务器["Server B - 配置中心<br/>192.168.1.11"]
+        CONF["config_server<br/>端口 20019"]
+    end
+
+    subgraph 鉴权服务器["Server C - 鉴权<br/>192.168.1.12"]
+        AUTH["xauth_server<br/>端口 20020"]
+    end
+
+    subgraph 日志服务器["Server D - 日志<br/>192.168.1.13"]
+        XLOG["xlog_server<br/>端口 20030"]
+    end
+
+    subgraph 业务服务器["Server E - 业务<br/>192.168.1.14"]
+        DIR["dir_service<br/>端口 20300"]
+        UP["upload_service<br/>端口 20100"]
+        DOWN["download_service<br/>端口 20200"]
+    end
+
+    subgraph 网关服务器["Server F - 网关<br/>192.168.1.15"]
+        GW["xms_gateway<br/>端口 20010"]
+    end
+
+    subgraph 客户端PC["用户 PC"]
+        CLIENT["xms_disk_client_gui<br/>(Qt 桌面客户端)"]
+    end
+
+    CONF -.->|MySQL| MYSQL_REG
+    AUTH -.->|MySQL| MYSQL_REG
+    XLOG -.->|MySQL| MYSQL_REG
+
+    REG --- CONF
+    REG --- AUTH
+    REG --- XLOG
+    REG --- DIR
+    REG --- UP
+    REG --- DOWN
+    REG --- GW
+
+    GW --> AUTH
+    GW --> DIR
+    GW --> UP
+    GW --> DOWN
+
+    CLIENT -->|连接网关 192.168.1.15:20010| GW
+</div>
+
+<h3>分布式 hosts 配置</h3>
+<div class="code-block">
+<span class="comment"># 所有服务器/客户端都需配置</span><br/>
+192.168.1.15  xms_gateway_server<br/>
+192.168.1.10  xms_register_server
+</div>
+
+<div class="grid-3">
+<div class="card">
+<div class="title"><span class="step">1</span> 注册中心服务器</div>
+<div class="content">
+<strong>IP:</strong> 192.168.1.10<br/>
+<strong>服务:</strong> register_server (端口 20018)<br/>
+<strong>MySQL:</strong> 本地安装<br/>
+<strong>防火墙:</strong> 开放 20018, 3306
+</div>
+</div>
+<div class="card">
+<div class="title"><span class="step">2</span> 配置中心服务器</div>
+<div class="content">
+<strong>IP:</strong> 192.168.1.11<br/>
+<strong>服务:</strong> config_server (端口 20019)<br/>
+<strong>启动参数:</strong> config_server.exe 20019 192.168.1.10 20018
+</div>
+</div>
+<div class="card">
+<div class="title"><span class="step">3</span> 鉴权服务器</div>
+<div class="content">
+<strong>IP:</strong> 192.168.1.12<br/>
+<strong>服务:</strong> xauth_server (端口 20020)<br/>
+<strong>启动参数:</strong> xauth_server.exe 20020 192.168.1.10 20018
+</div>
+</div>
+<div class="card">
+<div class="title"><span class="step">4</span> 日志服务器</div>
+<div class="content">
+<strong>IP:</strong> 192.168.1.13<br/>
+<strong>服务:</strong> xlog_server (端口 20030)<br/>
+<strong>启动参数:</strong> xlog_server.exe 20030 192.168.1.10 20018
+</div>
+</div>
+<div class="card">
+<div class="title"><span class="step">5</span> 业务服务器</div>
+<div class="content">
+<strong>IP:</strong> 192.168.1.14<br/>
+<strong>服务:</strong> dir/upload/download<br/>
+<strong>启动参数:</strong> xms_dir_service.exe &lt;port&gt; 192.168.1.10 20018
+</div>
+</div>
+<div class="card">
+<div class="title"><span class="step">6</span> 网关服务器</div>
+<div class="content">
+<strong>IP:</strong> 192.168.1.15<br/>
+<strong>服务:</strong> xms_gateway (端口 20010)<br/>
+<strong>启动参数:</strong> xms_gateway.exe 20010 192.168.1.10 20018
+</div>
+</div>
+</div>
+</div>
+
+<!-- ===== 数据库初始化 ===== -->
+<div class="section">
+<h2>7. 数据库初始化</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Admin as 运维
+    participant MySQL as MySQL Server
+    participant Config as config_server
+    participant Auth as xauth_server
+    participant Log as xlog_server
+
+    Admin->>MySQL: mysql -u root -p
+    Admin->>MySQL: CREATE DATABASE xms_config;
+    Admin->>MySQL: CREATE DATABASE xms_auth;
+    Admin->>MySQL: CREATE DATABASE xms_log;
+    Admin->>MySQL: GRANT ALL PRIVILEGES
+
+    Note over Config: 首次启动自动建表
+    Config->>MySQL: 连接 xms_config 数据库
+    Config->>MySQL: CREATE TABLE IF NOT EXISTS config...
+    MySQL-->>Config: 表已就绪
+
+    Note over Auth: 首次启动自动建表
+    Auth->>MySQL: 连接 xms_auth 数据库
+    Auth->>MySQL: CREATE TABLE IF NOT EXISTS users...
+    MySQL-->>Auth: 表已就绪
+
+    Note over Log: 首次启动自动建表
+    Log->>MySQL: 连接 xms_log 数据库
+    Log->>MySQL: CREATE TABLE IF NOT EXISTS logs...
+    MySQL-->>Log: 表已就绪
+</div>
+
+<h3>SQL 初始化命令</h3>
+<div class="code-block">
+<span class="comment">-- 登录 MySQL</span><br/>
+mysql -u root -p<br/><br/>
+<span class="comment">-- 创建数据库</span><br/>
+CREATE DATABASE IF NOT EXISTS xms_config DEFAULT CHARSET utf8;<br/>
+CREATE DATABASE IF NOT EXISTS xms_auth DEFAULT CHARSET utf8;<br/>
+CREATE DATABASE IF NOT EXISTS xms_log DEFAULT CHARSET utf8;<br/><br/>
+<span class="comment">-- 创建专用用户</span><br/>
+CREATE USER 'xms'@'localhost' IDENTIFIED BY '123456';<br/>
+GRANT ALL ON xms_config.* TO 'xms'@'localhost';<br/>
+GRANT ALL ON xms_auth.* TO 'xms'@'localhost';<br/>
+GRANT ALL ON xms_log.* TO 'xms'@'localhost';<br/>
+FLUSH PRIVILEGES;
+</div>
+</div>
+
+<!-- ===== 服务启动参数 ===== -->
+<div class="section">
+<h2 class="blue">8. 服务启动参数说明</h2>
+<table>
+<tr><th>服务</th><th>命令行格式</th><th>示例</th></tr>
+<tr><td>register_server</td><td><code>register_server.exe [port]</code></td><td><code>register_server.exe 20018</code></td></tr>
+<tr><td>config_server</td><td><code>config_server.exe</code></td><td><code>config_server.exe</code></td></tr>
+<tr><td>xauth_server</td><td><code>xauth_server.exe [port] [reg_ip] [reg_port]</code></td><td><code>xauth_server.exe 20020 127.0.0.1 20018</code></td></tr>
+<tr><td>xlog_server</td><td><code>xlog_server.exe [port] [reg_ip] [reg_port]</code></td><td><code>xlog_server.exe 20030 127.0.0.1 20018</code></td></tr>
+<tr><td>xms_gateway</td><td><code>xms_gateway.exe [port] [reg_ip] [reg_port]</code></td><td><code>xms_gateway.exe 20010 127.0.0.1 20018</code></td></tr>
+<tr><td>xms_dir_service</td><td><code>xms_dir_service.exe [port] [reg_ip] [reg_port]</code></td><td><code>xms_dir_service.exe 20300 127.0.0.1 20018</code></td></tr>
+<tr><td>xms_upload_service</td><td><code>xms_upload_service.exe [port] [reg_ip] [reg_port]</code></td><td><code>xms_upload_service.exe 20100 127.0.0.1 20018</code></td></tr>
+<tr><td>xms_download_service</td><td><code>xms_download_service.exe [port] [reg_ip] [reg_port]</code></td><td><code>xms_download_service.exe 20200 127.0.0.1 20018</code></td></tr>
+<tr><td>xms_disk_client_gui</td><td><code>xms_disk_client_gui.exe</code></td><td>直接启动 (无需参数)</td></tr>
+</table>
+<div class="note">
+  <strong>参数说明:</strong><br/>
+  - <code>port</code>: 本服务监听端口 (可选，默认使用 xmsg.h 中的定义)<br/>
+  - <code>reg_ip</code>: 注册中心IP地址<br/>
+  - <code>reg_port</code>: 注册中心端口 (默认 20018)<br/>
+  - 服务启动后自动从 hosts 解析注册中心域名<br/>
+  - 如果 hosts 配置正确，服务也可不带参数直接启动
+</div>
+</div>
+
+<!-- ===== 部署检查表 ===== -->
+<div class="section">
+<h2 class="green">9. 部署检查表</h2>
+<div class="grid-2">
+<div>
+<h3>环境准备</h3>
+<ul class="checklist">
+<li>Visual Studio 2022 已安装</li>
+<li>MSVC v143 工具集已安装</li>
+<li>Qt 6.11.0 已安装 (如需GUI)</li>
+<li>Qt VS Tools 扩展已安装</li>
+<li>MySQL Server 已安装并运行</li>
+<li>hosts 文件已配置</li>
+<li>目录链接有效</li>
+</ul>
+</div>
+<div>
+<h3>数据库</h3>
+<ul class="checklist">
+<li>xms_config 数据库已创建</li>
+<li>xms_auth 数据库已创建</li>
+<li>xms_log 数据库已创建</li>
+<li>MySQL 用户权限已配置</li>
+</ul>
+</div>
+<div>
+<h3>构建验证</h3>
+<ul class="checklist">
+<li>LXMysql 构建成功</li>
+<li>xplatform 构建成功</li>
+<li>register_server 构建成功</li>
+<li>config_server 构建成功</li>
+<li>xauth_server 构建成功</li>
+<li>xlog_server 构建成功</li>
+<li>xms_gateway 构建成功</li>
+<li>xms_dir_service 构建成功</li>
+<li>xms_upload_service 构建成功</li>
+<li>xms_download_service 构建成功</li>
+</ul>
+</div>
+<div>
+<h3>运行验证</h3>
+<ul class="checklist">
+<li>注册中心启动成功 (20018)</li>
+<li>配置中心启动成功 (20019)</li>
+<li>鉴权服务启动成功 (20020)</li>
+<li>日志服务启动成功 (20030)</li>
+<li>目录服务启动成功 (20300)</li>
+<li>上传服务启动成功 (20100)</li>
+<li>下载服务启动成功 (20200)</li>
+<li>网关启动成功 (20010)</li>
+<li>GUI 客户端可正常登录</li>
+</ul>
+</div>
+</div>
+</div>
+
+<!-- ===== 问题排查 ===== -->
+<div class="section">
+<h2 class="orange">10. 常见问题排查</h2>
+<div class="grid-2">
+<div class="card">
+<div class="title">🔥 服务启动后闪退</div>
+<div class="content">
+<strong>可能原因:</strong><br/>
+1. DLL 缺失 → 将所有依赖 DLL 放到 exe 同目录<br/>
+2. 端口被占用 → <code>netstat -ano | findstr 20018</code><br/>
+3. MySQL 连接失败 → 检查 MySQL 服务状态<br/>
+4. hosts 解析失败 → <code>ping xms_register_server</code>
+</div>
+</div>
+<div class="card">
+<div class="title">🔗 服务连接失败</div>
+<div class="content">
+<strong>排查步骤:</strong><br/>
+1. 确认注册中心先启动<br/>
+2. 检查防火墙是否放行端口<br/>
+3. 检查 hosts 文件<br/>
+4. 查看控制台诊断信息
+</div>
+</div>
+<div class="card">
+<div class="title">🗄️ MySQL 连接问题</div>
+<div class="content">
+<strong>排查步骤:</strong><br/>
+1. <code>net start MySQL80</code> 启动MySQL<br/>
+2. <code>mysql -u root -p -e "SHOW DATABASES;"</code><br/>
+3. 检查 DAO 中的连接参数 (IP/用户/密码)
+</div>
+</div>
+<div class="card">
+<div class="title">⚙️ 编译错误</div>
+<div class="content">
+<strong>常见问题:</strong><br/>
+1. LNK1104 找不到 .lib → 先构建依赖项目<br/>
+2. 找不到 include 头文件 → 检查目录链接<br/>
+3. Qt 相关错误 → 检查 Qt6 配置<br/>
+4. protobuf 版本冲突 → 确保所有项目用同一版本
+</div>
+</div>
+</div>
+</div>
+
+<div class="footer">
+  文档自动生成 — XMS 安全云盘微服务项目部署方案 — 2026-05-27<br/>
+  技术栈: C++ · libevent · Protobuf · OpenSSL · MySQL · Qt6 · MSVC 2022
+</div>
+
+<script>
+mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    flowchart: { useMaxWidth: true, htmlLabels: true },
+    sequence: { useMaxWidth: true }
+});
+</script>
+</body>
+</html>

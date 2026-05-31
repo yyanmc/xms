@@ -1,0 +1,62 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug xms_gateway (Win32)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/../bin/x86/xms_gateway.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/xms_gateway",
+            "environment": [],
+            "console": "externalTerminal",
+            "preLaunchTask": "build-gateway"
+        },
+        {
+            "name": "Debug xms_gateway (x64)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/../bin/x64/xms_gateway.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/xms_gateway",
+            "environment": [],
+            "console": "externalTerminal",
+            "preLaunchTask": "build-gateway"
+        },
+        {
+            "name": "Debug xauth (Win32)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/../bin/x86/xauth.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/xauth",
+            "environment": [],
+            "console": "externalTerminal",
+            "preLaunchTask": "build-auth"
+        },
+        {
+            "name": "Debug register_server (Win32)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/../bin/x86/register_server.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/register_server",
+            "environment": [],
+            "console": "externalTerminal",
+            "preLaunchTask": "build-register-server"
+        },
+        {
+            "name": "Attach to Process",
+            "type": "cppvsdbg",
+            "request": "attach",
+            "processId": "${command:pickProcess}",
+            "pipeTransport": {
+                "pipeCwd": "${workspaceFolder}"
+            }
+        }
+    ]
+}

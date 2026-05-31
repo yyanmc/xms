@@ -1,0 +1,159 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Form Files">
+      <UniqueIdentifier>{99349809-55BA-4b9d-BF79-8FDBB0286EB3}</UniqueIdentifier>
+      <Extensions>ui</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="pb">
+      <UniqueIdentifier>{78a9de38-bfe0-4cf8-ac5c-77b78dd6d942}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xmsdiskclientgui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xget_dir_client.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\xdisk_pb\xms_disk_client_gui.pb.cc">
+      <Filter>pb</Filter>
+    </ClCompile>
+    <ClCompile Include="xupload_client.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="task_list_gui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="taskitemgui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xfile_manager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xms_file_manager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xdownload_client.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="logingui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\xauth\xauth_client.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\xplatform\xmsg_com.pb.cc">
+      <Filter>pb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\xplatform\xmsg_type.pb.cc">
+      <Filter>pb</Filter>
+    </ClCompile>
+    <ClCompile Include="filepassword.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="xmsdiskclientgui.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="task_list_gui.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="taskitemgui.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="xfile_manager.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="logingui.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="filepassword.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+  </ItemGroup>
+  <ItemGroup>
+    <QtUic Include="xmsdiskclientgui.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="task_list_gui.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="taskitemgui.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="logingui.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="filepassword.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+  </ItemGroup>
+  <ItemGroup>
+    <QtRcc Include="xmsdiskclientgui.qrc">
+      <Filter>Resource Files</Filter>
+    </QtRcc>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="build_msg.bat">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="云盘客户端设计.md" />
+    <None Include="..\xdisk_pb\xms_disk_client_gui.proto">
+      <Filter>pb</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="xget_dir_client.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\xdisk_pb\xms_disk_client_gui.pb.h">
+      <Filter>pb</Filter>
+    </ClInclude>
+    <ClInclude Include="xupload_client.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="xms_file_manager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="xdownload_client.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\xauth\xauth_client.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\xplatform\xmsg_com.pb.h">
+      <Filter>pb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\xplatform\xmsg_type.pb.h">
+      <Filter>pb</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="xms_disk_client_gui.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

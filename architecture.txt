@@ -1,0 +1,442 @@
+================================================================================
+                  C++ 微服务架构安全云盘项目 — 架构分析文档
+================================================================================
+
+一、项目概述
+--------------------------------------------------------------------------------
+本项目是一个基于 C++ 的分布式微服务架构安全云盘系统。采用 libevent 异步网络
+框架 + Google Protobuf 序列化 + MySQL 数据库的技术栈，实现了服务注册与发现、
+配置中心、用户鉴权、日志收集、文件上传/下载等核心功能，并提供 Qt 桌面客户端。
+
+二、系统架构图
+--------------------------------------------------------------------------------
+                         +------------------+
+                         |   Qt 桌面客户端   |
+                         | (Disk Client GUI) |
+                         +--------+---------+
+                                  |
+                         +--------+---------+
+                         |   API 网关(GW)   | 端口 20010
+                         |  xms_gateway     |
+                         +--+---+---+---+---+
+                            |   |   |   |
+               +------------+   |   |   +------------+
+               |                |   |                |
+        +------+------+  +-----+---+----+  +--------+--------+
+        | 鉴权服务(Auth)|  | 目录服务(Dir)|  | 上传服务(Upload)|
+        | 端口 20020    |  | 端口 20300   |  | 端口 20100     |
+        +------+-------+  +------+-------+  +--------+--------+
+               |                  |                   |
+        +------+-------+  +------+-------+  +--------+--------+
+        |  下载服务     |  |  配置中心     |  |  日志服务      |
+        | (Download)    |  | (Config)     |  | (XLog)         |
+        | 端口 20200    |  | 端口 20019   |  | 端口 20030     |
+        +------+-------+  +------+-------+  +--------+--------+
+               |                  |                   |
+               |           +-----+-----+             |
+               |           |  MySQL DB  |             |
+               |           +-----+-----+             |
+               |                 |                   |
+               |          +------+-------+           |
+               +----------| 注册中心     |-----------+
+                          | (Register)   |
+                          | 端口 20018   |
+                          +--------------+
+
+三、基础设施层 (xplatform) — 核心通信框架
+--------------------------------------------------------------------------------
+
+3.1 类继承体系
+
+  XTask (基类)
+  ├─ 属性: base_(event_base), sock_, ssl_ctx_, thread_id_
+  ├─ 方法: Init() [纯虚]
+
+  XComTask : public XTask (网络通信层)
+  ├─ bufferevent 封装
+  ├─ Connect() / Close() / Read() / Write() / Init()
+  ├─ SetTimer() / TimerCB() 定时器
+  ├─ AutoConnect() 自动重连
+  └─ ReadCB() / WriteCB() / EventCB() / ConnectedCB()
+
+  XMsgEvent : public XComTask (消息事件层)
+  ├─ Protobuf 消息收发
+  ├─ RecvMsg() / GetMsg() / SendMsg()
+  ├─ ReadCB() 消息分发 (静态回调表 msg_callback)
+  ├─ Clear() / Close()
+  └─ RegCB() 注册消息类型回调
+
+  XServiceHandle : public XMsgEvent (服务端连接处理器)
+  └─ 各业务模块继承此类实现具体逻辑
+
+  XServiceClient : public XMsgEvent (客户端连接管理器)
+  ├─ SetHead() 自动填充 token/service_name
+  ├─ StartConnect() 启动连接
+  └─ set_login() 设置登录信息
+
+  XLogClient : public XServiceClient (日志客户端)
+  ├─ 单例模式
+  ├─ 批量缓存日志，定时发送
+  └─ 支持本地日志文件
+
+  XService : public XTask (服务端基类)
+  ├─ 监听端口, 接受客户端连接
+  ├─ 两个线程池: listen_pool + client_pool
+  ├─ CreateServiceHandle() [纯虚] 创建连接处理器
+  └─ Init() / Start() / ListenCB()
+
+3.2 线程模型
+
+  XThread 线程类
+  ├─ 每个线程拥有独立的 event_base
+  ├─ socketpair(Windows) / pipe(Linux) 用于线程激活
+  ├─ 任务队列 tasks_ + 互斥锁
+  └─ 主循环: event_base_loop(NONBLOCK) + sleep(1ms)
+
+  XThreadPool 线程池
+  ├─ Init(count) 创建并启动 N 个线程
+  ├─ Dispatch(task) 轮询分发任务
+  └─ 全局: ExitAllThread() / Wait()
+
+3.3 通信协议
+
+  协议格式 (TCP 流):
+  +------------------+------------------+------------------+
+  |  头部大小(4字节)  |  Protobuf 消息头  |  消息体(可选)     |
+  |    int32          |   XMsgHead       | 业务 PB 数据     |
+  +------------------+------------------+------------------+
+
+  XMsgHead 主要字段:
+  ├─ msg_size: 消息体大小
+  ├─ msg_type: 消息类型 (MsgType 枚举)
+  ├─ token: 用户令牌
+  ├─ service_name: 目标服务名称 (路由用)
+  ├─ msg_id: 消息ID
+  ├─ username / rolename: 用户信息
+  ├─ md5: 消息体校验
+  └─ offset: 文件数据偏移
+
+3.4 安全与工具
+
+  XSSLCtx: SSL 上下文 (OpenSSL 封装)
+  ├─ InitServer(crt, key, ca) 服务端初始化
+  └─ InitClient(ca) 客户端初始化
+
+  XSSL: SSL 通信对象
+  ├─ Accept() / Connect() 握手
+  └─ Read() / Write() 加密通信
+
+  XAES: AES 加解密
+  ├─ 支持 128/192/256 位密钥
+  └─ Encrypt() / Decrypt()
+
+  XMutex: RAII 互斥锁封装
+  XTools: 工具函数集
+  ├─ XMD5 / XMD5_base64 / Base64Encode / Base64Decode
+  ├─ GetDirList / GetDiskSize / GetDirSize
+  ├─ XGetHostByName (域名解析)
+  ├─ XGetTime / XGetSizeString
+  └─ XGetPortName (端口→服务名映射)
+
+四、基础设施微服务
+--------------------------------------------------------------------------------
+
+4.1 注册中心 (Register Server)
+  ├─ 解决方案: register_server.sln → register_server.exe
+  ├─ 端口: 20018
+  ├─ 服务名: reg / 主机名: xms_register_server
+  ├─ 职责:
+  │   ├─ MSG_REGISTER_REQ: 接收服务注册
+  │   ├─ MSG_GET_SERVICE_REQ: 服务发现 (按名称/全部)
+  │   └─ MSG_HEART_REQ: 心跳检测
+  ├─ 存储: 内存 (map<string, vector<ServiceInfo>>)
+  └─ 关键类:
+      ├─ XRegisterServer → XService
+      └─ XRegisterHandle → XServiceHandle
+
+4.2 配置中心 (Config Server)
+  ├─ 解决方案: config_server.sln → config_server.exe
+  ├─ 端口: 20019
+  ├─ 服务名: config
+  ├─ 职责:
+  │   ├─ MSG_SAVE_CONFIG_REQ: 保存配置 (增/改)
+  │   ├─ MSG_LOAD_CONFIG_REQ: 按IP+端口加载配置
+  │   ├─ MSG_LOAD_ALL_CONFIG_REQ: 分页获取配置列表
+  │   └─ MSG_DEL_CONFIG_REQ: 删除配置
+  ├─ 存储: MySQL (config_dao → LXMysql)
+  └─ 关键类:
+      ├─ XConfigServer → XService
+      ├─ XConfigHandle → XServiceHandle
+      └─ ConfigDao (单例)
+
+4.3 鉴权服务 (Auth Server)
+  ├─ 解决方案: xauth.sln → xauth_server.exe
+  ├─ 端口: 20020
+  ├─ 服务名: auth
+  ├─ 职责:
+  │   ├─ MSG_LOGIN_REQ: 用户登录 (用户名+密码 → token)
+  │   ├─ MSG_ADD_USER_REQ: 添加用户
+  │   ├─ MSG_CHANGE_PASSWORD_REQ: 修改密码
+  │   └─ MSG_CHECK_TOKEN_REQ: 验证令牌
+  ├─ 存储: MySQL (xauth_dao → LXMysql)
+  └─ 关键类:
+      ├─ XAuthService → XService
+      ├─ XAuthHandle → XServiceHandle
+      └─ XAuthDao (单例)
+
+4.4 日志服务 (Log Server)
+  ├─ 解决方案: xlog.sln → xlog_server.exe
+  ├─ 端口: 20030
+  ├─ 服务名: xlog
+  ├─ 职责:
+  │   └─ MSG_ADD_LOG_REQ: 接收并存储日志
+  ├─ 存储: MySQL (xlog_dao → LXMysql)
+  └─ 关键类:
+      ├─ XLogServer → XService
+      ├─ XLogHandle → XServiceHandle
+      └─ XLogDao
+
+五、业务微服务
+--------------------------------------------------------------------------------
+
+5.1 API 网关 (Gateway)
+  ├─ 解决方案: xms_gateway.vcxproj → xms_gateway.exe
+  ├─ 端口: 20010 (API_GATEWAY_PORT)
+  ├─ 服务名: gw / 主机名: xms_gateway_server
+  ├─ 职责:
+  │   ├─ 客户端连接入口
+  │   ├─ 消息鉴权 (XAuthProxy::CheckToken)
+  │   ├─ 消息路由转发 (按 service_name 分发)
+  │   ├─ 负载均衡 (轮询算法)
+  │   ├─ 动态服务发现 (周期性从注册中心更新)
+  │   └─ 对外服务查询 (MSG_GET_OUT_SERVICE_REQ)
+  └─ 关键类:
+      ├─ XRouterServer → XService (监听端口)
+      ├─ XRouterHandle → XServiceHandle (消息路由)
+      ├─ XServiceProxy (单例, 服务代理管理器)
+      │   ├─ SendMsg: 按 service_name 轮询转发
+      │   └─ Main: 周期性从注册中心更新服务列表
+      ├─ XServiceProxyClient → XServiceClient (代理连接)
+      │   ├─ RegEvent / DelEvent: 回调管理
+      │   └─ SendMsg(head, msg, ev): 带回调的消息发送
+      └─ XAuthProxy → XServiceProxyClient (鉴权代理)
+          └─ CheckToken: 令牌验证
+
+5.2 目录服务 (Dir Service)
+  ├─ 解决方案: xms_dir_service.vcxproj → xms_dir_service.exe
+  ├─ 端口: 20300
+  ├─ 服务名: dir
+  ├─ 职责:
+  │   ├─ GET_DIR_REQ: 获取目录文件列表
+  │   ├─ DELETE_FILE_REQ: 删除文件
+  │   ├─ NEW_DIR_REQ: 创建目录
+  │   └─ GET_DISK_INFO_REQ: 获取磁盘空间信息
+  └─ 关键类:
+      ├─ XDirService → XService
+      └─ XDirHandle → XServiceHandle
+
+5.3 上传服务 (Upload Service)
+  ├─ 解决方案: xms_upload_service.vcxproj → xms_upload_service.exe
+  ├─ 端口: 20100
+  ├─ 服务名: upload
+  ├─ 职责:
+  │   ├─ UPLOAD_FILE_REQ: 上传文件请求
+  │   ├─ SEND_SLICE_REQ: 接收文件片
+  │   ├─ UPLOAD_FILE_END_REQ: 上传完成确认
+  │   └─ 支持 AES 加密文件存储
+  └─ 关键类:
+      ├─ XUploadServer → XService
+      └─ XUploadHandle → XServiceHandle
+
+5.4 下载服务 (Download Service)
+  ├─ 解决方案: xms_download_service.vcxproj → xms_download_service.exe
+  ├─ 端口: 20200
+  ├─ 服务名: download
+  ├─ 职责:
+  │   ├─ DOWNLOAD_FILE_REQ: 下载文件请求
+  │   ├─ DOWNLOAD_FILE_BEGTIN: 客户端就绪
+  │   └─ DOWNLOAD_SLICE_RES: 发送文件片
+  └─ 关键类:
+      ├─ XDownloadServer → XService
+      └─ XDownloadHandle → XServiceHandle
+
+5.5 看门狗 (Watchdog)
+  ├─ 文件: xplatform/watchdog.cpp (Linux only)
+  ├─ 职责: 守护进程，进程崩溃后自动重启
+  └─ 用法: ./watchdog 3 ./register_server 20011
+
+六、客户端应用
+--------------------------------------------------------------------------------
+
+6.1 云盘桌面客户端 (Disk Client GUI)
+  ├─ 解决方案: xms_disk_client_gui.sln → xms_disk_client_gui.exe
+  ├─ 框架: Qt6 Widgets
+  ├─ 启动流程:
+  │   1. main() 创建 XMSFileManager
+  │   2. 解析域名 xms_gateway_server 获取网关IP
+  │   3. 创建并连接 XAuthClient 到网关
+  │   4. 显示 LoginGUI 登录对话框
+  │   5. 登录成功后初始化文件管理器
+  │   6. 显示主界面 XMSDiskClientGui
+  └─ 关键类:
+      ├─ XMSDiskClientGui → QWidget (主界面)
+      ├─ LoginGUI → QDialog (登录对话框)
+      ├─ XMSFileManager → QObject (文件管理逻辑)
+      ├─ XFileManager → QObject (抽象文件管理器, Qt信号)
+      ├─ XGetDirClient → XServiceClient (目录操作)
+      ├─ XAuthClient → XServiceClient (登录认证)
+      ├─ XUploadClient → XServiceClient (上传)
+      ├─ XDownloadClient → XServiceClient (下载)
+      ├─ XUploadProxy (上传代理调度)
+      ├─ TaskListGUI → QWidget (任务列表)
+      ├─ TaskItemGUI → QWidget (任务项)
+      ├─ FilePassword → QDialog (文件加密密码)
+      └─ FileManager (旧版文件管理器)
+
+6.2 配置管理 GUI (Config GUI)
+  ├─ 解决方案: config_gui.sln → config_gui.exe
+  ├─ 框架: Qt6 Widgets
+  └─ 关键类:
+      ├─ ConfigGui → QWidget (主界面)
+      ├─ LoginGUI → QDialog (登录)
+      └─ ConfigEdit → QWidget (配置编辑)
+
+6.3 命令行工具
+  ├─ config_client.exe: 配置中心功能测试
+  ├─ register_client.exe: 注册中心功能测试
+  └─ xms_add_user.exe: 添加用户工具
+
+七、数据库层 (LXMysql)
+--------------------------------------------------------------------------------
+  ├─ 解决方案: LXMysql.sln → LXMysql.lib (静态库)
+  ├─ 封装: MySQL C API
+  └─ 功能:
+      ├─ Connect() 数据库连接
+      ├─ Query() / StoreResult() / FetchRow()
+      ├─ Insert() / InsertBin() (二进制数据)
+      ├─ Update() / UpdateBin()
+      ├─ GetInsertID()
+      ├─ StartTransaction() / Commit() / Rollback()
+      └─ GetResult() 简易查询接口
+
+八、Protobuf 协议定义
+--------------------------------------------------------------------------------
+
+8.1 xmsg_type.proto — 消息类型枚举
+  ├─ MSG_LOGIN_REQ/RES (1/2): 登录
+  ├─ MSG_DIR_REQ/RES (3/4): 目录
+  ├─ MSG_REGISTER_REQ/RES (5/6): 注册服务
+  ├─ MSG_GET_SERVICE_REQ/RES (7/8): 服务发现
+  ├─ MSG_SAVE_CONFIG_REQ/RES (9/10): 保存配置
+  ├─ MSG_LOAD_CONFIG_REQ/RES (11/12): 加载配置
+  ├─ MSG_LOAD_ALL_CONFIG_REQ/RES (13/14): 配置列表
+  ├─ MSG_DEL_CONFIG_REQ/RES (15/16): 删除配置
+  ├─ MSG_ADD_USER_REQ/RES (17/18): 添加用户
+  ├─ MSG_CHANGE_PASSWORD_REQ/RES (19/208): 修改密码
+  ├─ MSG_CHECK_TOKEN_REQ/RES (209/210): 验证令牌
+  ├─ MSG_ADD_LOG_REQ (211): 添加日志
+  ├─ MSG_GET_OUT_SERVICE_REQ/RES (65532/65533): 获取外部服务
+  └─ MSG_HEART_REQ (65534): 心跳
+
+8.2 xmsg_com.proto — 通用消息结构
+  ├─ XMsgHead: 消息头 (msg_size, msg_type, token, service_name...)
+  ├─ XMessageRes: 通用响应
+  ├─ XAddUserReq: 添加用户
+  ├─ XLoginReq / XLoginRes: 登录请求/响应
+  ├─ XDirReq / XDirRes: 目录请求/响应
+  ├─ XServiceInfo / XServiceList / XServiceMap: 服务信息
+  ├─ XConfig / XConfigList: 配置
+  ├─ XGatewayConfig / XAuthConfig: 微服务配置
+  └─ XAddLogReq: 日志
+
+8.3 xms_disk_client_gui.proto — 业务协议
+  ├─ GET_DIR_REQ/RES: 获取目录
+  ├─ UPLOAD_FILE_REQ/RES/SEND_SLICE_REQ/RES/UPLOAD_FILE_END_REQ/RES: 上传
+  ├─ DOWNLOAD_FILE_REQ/RES/DOWNLOAD_SLICE_REQ/RES: 下载
+  ├─ DELETE_FILE_REQ/RES: 删除文件
+  ├─ NEW_DIR_REQ/RES: 新建目录
+  ├─ GET_DISK_INFO_REQ/RES: 磁盘信息
+  ├─ XFileInfo: 文件信息
+  ├─ XFileSlice: 文件片
+  └─ XFileTask / XFileTaskList: 任务列表
+
+九、消息通信流程
+--------------------------------------------------------------------------------
+
+9.1 服务启动流程
+  ┌──────────┐   ①注册     ┌──────────┐   ②获取配置  ┌──────────┐
+  │ 微服务    │──────────→ │ 注册中心  │──────────→  │ 配置中心  │
+  │ (Auth/等) │←────────── │ (port:20018)│           │ (port:20019)│
+  └──────────┘   响应       └──────────┘             └──────────┘
+
+9.2 客户端请求流程
+  桌面客户端                   网关                       微服务
+  ┌──────┐   ①登录请求      ┌──────┐   ②鉴权proxy    ┌──────────┐
+  │      │────────────────→│      │───────────────→  │ Auth     │
+  │      │←────────────────│      │←───────────────  │ (port:20020)│
+  │      │   登录响应        │      │                 └──────────┘
+  │      │   ③目录请求      │      │   ④路由转发     ┌──────────┐
+  │      │────────────────→│      │───────────────→  │ Dir      │
+  │      │←────────────────│      │←───────────────  │ (port:20300)│
+  │      │   目录响应        │      │                 └──────────┘
+  │      │   ⑤上传请求      │      │   ⑥路由转发     ┌──────────┐
+  │      │────────────────→│      │───────────────→  │ Upload   │
+  │      │←────────────────│      │←───────────────  │ (port:20100)│
+  │      │   上传响应        │      │                 └──────────┘
+  └──────┘                 └──────┘
+
+9.3 网关路由逻辑
+  XRouterHandle::ReadCB() 收到客户端消息 →
+    ① 验证 Token (XAuthProxy::CheckToken)
+    ② 按 head->service_name 查找 XServiceProxy
+    ③ 轮询选择可用后端服务
+    ④ XServiceProxyClient::SendMsg(head, msg, router_handle)
+    ⑤ 后端返回后通过 callback_task_ 回传给 XRouterHandle
+    ⑥ XRouterHandle::SendMsg() 回复客户端
+
+十、项目模块清单
+--------------------------------------------------------------------------------
+  模块                类型       端口    .sln            .vcxproj
+  ─────────────────────────────────────────────────────────────────
+  xplatform           静态库      -     ✓              ✓
+  LXMysql             静态库      -     ✓              ✓
+  xms_gateway         EXE      20010   ✗              ✓
+  register_server     EXE      20018   ✓              ✓
+  config_server       EXE      20019   ✓              ✓
+  xauth_server        EXE      20020   ✓              ✓
+  xlog_server         EXE      20030   ✓              ✓
+  xms_dir_service     EXE      20300   ✗              ✓
+  xms_upload_service  EXE      20100   ✗              ✓
+  xms_download_service EXE     20200   ✗              ✓
+  xms_disk_client_gui EXE (Qt)   -     ✓              ✓
+  config_gui          EXE (Qt)   -     ✓              ✓
+  config_client       EXE        -     ✓              ✓
+  register_client     EXE        -     ✓              ✓
+  xms_add_user        EXE        -     ✗              ✗ (无构建配置)
+  watchdog            EXE(Linux) -     -              - (独立源码)
+
+  ⚠ xms_dir_service / xms_upload_service / xms_download_service / xms_gateway
+    缺少独立的 .sln 文件, 4个业务服务只有 .vcxproj
+
+十一、文件存储说明
+--------------------------------------------------------------------------------
+  ├─ 用户文件通过上传/下载服务以文件片形式传输
+  ├─ 支持 AES 加密存储 (用户输入密码)
+  ├─ 支持断点续传 (offset 偏移量)
+  ├─ 支持 MD5 校验 (秒传判断)
+  ├─ 每个上传/下载连接处理单个文件
+  ├─ 服务端以 ofstream 直接写入本地文件系统
+  └─ 目录服务管理文件元数据和目录结构
+
+十二、关键依赖库
+--------------------------------------------------------------------------------
+  ├─ libevent: 异步网络框架
+  ├─ protobuf: 数据序列化
+  ├─ OpenSSL: SSL/TLS 加密通信
+  ├─ MySQL Connector/C: 数据库
+  ├─ Qt6: 桌面 GUI
+  └─ (可选) pthread / WS2_32: 平台相关
+
+================================================================================
+                          文档生成日期: 2026-05-27
+================================================================================

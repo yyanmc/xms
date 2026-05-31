@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>XMS 微服务架构云盘 — 架构可视化</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; padding: 20px; }
+  h1 { text-align: center; margin: 20px 0; font-size: 28px; color: #1a1a2e; }
+  h1 small { display: block; font-size: 14px; color: #666; font-weight: normal; margin-top: 4px; }
+  h2 { margin: 30px 0 15px; padding: 10px 15px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border-radius: 8px; font-size: 20px; }
+  h3 { margin: 20px 0 10px; color: #2c3e50; border-left: 4px solid #667eea; padding-left: 10px; }
+  .section { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  .mermaid { background: #fafafa; padding: 15px; border-radius: 8px; overflow-x: auto; }
+  .class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin: 10px 0; }
+  .class-card { background: #f8f9fe; border: 1px solid #e8ecf4; border-radius: 8px; padding: 12px; }
+  .class-card .name { font-weight: bold; color: #4361ee; font-size: 14px; }
+  .class-card .parent { color: #888; font-size: 12px; }
+  .class-card .desc { color: #555; font-size: 13px; margin-top: 4px; }
+  .port-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+  .port-table th { background: #4361ee; color: #fff; padding: 8px 12px; text-align: left; }
+  .port-table td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+  .port-table tr:hover td { background: #f0f4ff; }
+  .type-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; color: #fff; }
+  .type-svc { background: #e74c3c; }
+  .type-biz { background: #2ecc71; }
+  .type-client { background: #3498db; }
+  .type-lib { background: #9b59b6; }
+  .proto-table { width: 100%; font-size: 13px; border-collapse: collapse; }
+  .proto-table th { background: #2c3e50; color: #fff; padding: 6px 10px; }
+  .proto-table td { padding: 6px 10px; border-bottom: 1px solid #eee; font-family: 'Consolas', monospace; font-size: 12px; }
+  .proto-table tr:nth-child(even) td { background: #f8f9fa; }
+  .flow-box { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 15px; margin: 10px 0; }
+  .flow-box ol { margin-left: 20px; }
+  .flow-box li { margin: 4px 0; }
+  .footer { text-align: center; color: #888; font-size: 13px; margin: 30px 0; }
+  .note { background: #d1ecf1; border: 1px solid #17a2b8; border-radius: 8px; padding: 10px 15px; margin: 10px 0; font-size: 13px; color: #0c5460; }
+  @media (max-width: 768px) { .class-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<h1>XMS 安全云盘 — 微服务架构总览<small>C++ Microservices Cloud Disk Architecture — 2026-05-27</small></h1>
+
+<!-- ===== 整体架构图 ===== -->
+<div class="section">
+<h2>1. 系统整体架构</h2>
+<div class="mermaid">
+graph TB
+    subgraph 客户端层["📱 客户端层 (Client)"]
+        GUI1["xms_disk_client_gui<br/>(Qt6 桌面云盘客户端)"]
+        GUI2["config_gui<br/>(Qt6 配置管理)"]
+        CLI1["config_client<br/>(CLI 测试)"]
+        CLI2["register_client<br/>(CLI 测试)"]
+    end
+
+    subgraph 网关层["🚪 API 网关层 (Gateway)"]
+        GW["xms_gateway<br/>端口 20010<br/>路由/鉴权/负载均衡"]
+    end
+
+    subgraph 基础设施层["🔧 基础设施微服务"]
+        REG["register_server<br/>注册中心<br/>端口 20018"]
+        CONF["config_server<br/>配置中心<br/>端口 20019"]
+        AUTH["xauth_server<br/>鉴权服务<br/>端口 20020"]
+        XLOG["xlog_server<br/>日志服务<br/>端口 20030"]
+    end
+
+    subgraph 业务微服务层["📂 业务微服务"]
+        DIR["xms_dir_service<br/>目录服务<br/>端口 20300"]
+        UPLOAD["xms_upload_service<br/>上传服务<br/>端口 20100"]
+        DOWNLOAD["xms_download_service<br/>下载服务<br/>端口 20200"]
+    end
+
+    subgraph 数据层["🗄️ 数据层"]
+        MYSQL1[("MySQL<br/>配置数据")]
+        MYSQL2[("MySQL<br/>用户/鉴权数据")]
+        MYSQL3[("MySQL<br/>日志数据")]
+        LOCALFS[("本地文件系统<br/>用户文件存储")]
+    end
+
+    subgraph 基础库["📚 基础库"]
+        XPLATFORM["xplatform.lib<br/>网络/线程/消息框架"]
+        LXMYSQL["LXMysql.lib<br/>MySQL 封装"]
+        PROTO["Protobuf<br/>消息协议"]
+        LIBEVENT["libevent<br/>异步网络"]
+        SSL["OpenSSL<br/>加密通信"]
+        QT["Qt6<br/>界面框架"]
+    end
+
+    GUI1 -->|TCP| GW
+    GUI2 -->|TCP| GW
+    CLI1 -->|TCP| GW
+    CLI2 -->|TCP| REG
+
+    GW --> REG
+    GW --> CONF
+    GW --> AUTH
+    GW --> XLOG
+    GW --> DIR
+    GW --> UPLOAD
+    GW --> DOWNLOAD
+
+    AUTH --> MYSQL2
+    CONF --> MYSQL1
+    XLOG --> MYSQL3
+    DIR --> LOCALFS
+    UPLOAD --> LOCALFS
+    DOWNLOAD --> LOCALFS
+
+    GW -.-> XPLATFORM
+    AUTH -.-> XPLATFORM
+    AUTH -.-> LXMYSQL
+    DIR -.-> XPLATFORM
+    UPLOAD -.-> XPLATFORM
+    DOWNLOAD -.-> XPLATFORM
+</div>
+</div>
+
+<!-- ===== 通信协议 ===== -->
+<div class="section">
+<h2>2. 通信协议</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant C as 客户端/调用方
+    participant S as 服务端/被调用方
+
+    Note over C,S: TCP 流式协议
+
+    C->>S: [4字节: 头部大小(int32)]
+    C->>S: [N字节: Protobuf XMsgHead 序列化]
+    C->>S: [M字节: Protobuf 消息体(可选)]
+
+    Note over XMsgHead: msg_size | msg_type | token | service_name | msg_id | username | md5 | offset
+
+    S->>S: 1. 读取 4 字节获取头部大小
+    S->>S: 2. 分配空间接收头部
+    S->>S: 3. 反序列化 XMsgHead
+    S->>S: 4. 根据 msg_size 接收消息体
+    S->>S: 5. 按 msg_type 分发到回调函数
+    S-->>C: 响应 (同样格式)
+</div>
+</div>
+
+<!-- ===== 端口与服务映射 ===== -->
+<div class="section">
+<h2>3. 服务端口映射</h2>
+<table class="port-table">
+<tr><th>服务名称</th><th>端口</th><th>服务标识</th><th>类型</th><th>主机名</th><th>描述</th></tr>
+<tr><td>xms_gateway</td><td>20010</td><td>gw</td><td><span class="type-tag type-biz">业务</span></td><td>xms_gateway_server</td><td>API 网关, 消息路由</td></tr>
+<tr><td>register_server</td><td>20018</td><td>reg</td><td><span class="type-tag type-svc">基础设施</span></td><td>xms_register_server</td><td>服务注册与发现</td></tr>
+<tr><td>config_server</td><td>20019</td><td>config</td><td><span class="type-tag type-svc">基础设施</span></td><td>-</td><td>配置中心</td></tr>
+<tr><td>xauth_server</td><td>20020</td><td>auth</td><td><span class="type-tag type-svc">基础设施</span></td><td>-</td><td>鉴权/用户管理</td></tr>
+<tr><td>xlog_server</td><td>20030</td><td>xlog</td><td><span class="type-tag type-svc">基础设施</span></td><td>-</td><td>日志收集</td></tr>
+<tr><td>xms_dir_service</td><td>20300</td><td>dir</td><td><span class="type-tag type-biz">业务</span></td><td>-</td><td>目录/文件管理</td></tr>
+<tr><td>xms_upload_service</td><td>20100</td><td>upload</td><td><span class="type-tag type-biz">业务</span></td><td>-</td><td>文件上传</td></tr>
+<tr><td>xms_download_service</td><td>20200</td><td>download</td><td><span class="type-tag type-biz">业务</span></td><td>-</td><td>文件下载</td></tr>
+<tr><td>xms_disk_client_gui</td><td>-</td><td>-</td><td><span class="type-tag type-client">客户端</span></td><td>-</td><td>Qt6 桌面云盘客户端</td></tr>
+<tr><td>config_gui</td><td>-</td><td>-</td><td><span class="type-tag type-client">客户端</span></td><td>-</td><td>Qt6 配置管理界面</td></tr>
+<tr><td>xplatform</td><td>-</td><td>-</td><td><span class="type-tag type-lib">基础库</span></td><td>-</td><td>核心通信框架(静态库)</td></tr>
+<tr><td>LXMysql</td><td>-</td><td>-</td><td><span class="type-tag type-lib">基础库</span></td><td>-</td><td>MySQL 封装(静态库)</td></tr>
+</table>
+</div>
+
+<!-- ===== 类继承体系 ===== -->
+<div class="section">
+<h2>4. 核心类继承体系</h2>
+<div class="mermaid">
+classDiagram
+    class XTask {
+        +base_ : event_base*
+        +sock_ : int
+        +ssl_ctx_ : XSSLCtx*
+        +Init()* bool
+    }
+
+    class XComTask {
+        +bev_ : bufferevent*
+        +server_ip_ : char[16]
+        +server_port_ : int
+        +Connect() bool
+        +Close() void
+        +Read() int
+        +Write() bool
+        +Init() bool
+        +SetTimer() void
+        +ReadCB()* void
+    }
+
+    class XMsgEvent {
+        +head_ : XMsg
+        +msg_ : XMsg
+        +pb_head_ : XMsgHead*
+        +ReadCB() void
+        +RecvMsg() bool
+        +SendMsg() bool
+        +RegCB() static void
+        +Clear() void
+    }
+
+    class XServiceHandle {
+    }
+
+    class XServiceClient {
+        +service_name_ : string
+        +login_ : XLoginRes*
+        +StartConnect() void
+        +SetHead() XMsgHead*
+    }
+
+    class XService {
+        +thread_listen_pool_ : XThreadPool*
+        +thread_client_pool_ : XThreadPool*
+        +server_port_ : int
+        +Init() bool
+        +Start() bool
+        +CreateServiceHandle()* XServiceHandle*
+        +ListenCB() void
+    }
+
+    class XLogClient {
+        +logs_ : list~XAddLogReq~
+        +AddLog() void
+        +StartLog() bool
+        +TimerCB() void
+    }
+
+    XTask <|-- XComTask
+    XComTask <|-- XMsgEvent
+    XMsgEvent <|-- XServiceHandle
+    XMsgEvent <|-- XServiceClient
+    XServiceClient <|-- XLogClient
+    XTask <|-- XService
+</div>
+
+<div class="note">
+  <strong>继承关系:</strong>
+  XTask (网络任务基类) → XComTask (bufferevent 通信) → XMsgEvent (Protobuf 消息) →
+  XServiceHandle (服务端连接处理器) / XServiceClient (客户端连接管理器)
+</div>
+</div>
+
+<!-- ===== 业务Handle继承体系 ===== -->
+<div class="section">
+<h2>5. 业务 Handle 继承体系</h2>
+<div class="mermaid">
+classDiagram
+    class XMsgEvent {
+        <<通信消息层>>
+        +RegCB() static
+        +ReadCB() void
+        +SendMsg() bool
+    }
+
+    class XServiceHandle {
+        <<服务端连接处理器>>
+    }
+
+    class XRouterHandle {
+        <<网关路由>>
+        +ReadCB() void
+        +Close() void
+        +SendMsg() bool
+    }
+
+    class XRegisterHandle {
+        <<注册中心>>
+        +RegisterReq() void
+        +GetServiceReq() void
+    }
+
+    class XConfigHandle {
+        <<配置中心>>
+        +SaveConfig() void
+        +LoadConfig() void
+        +LoadAllConfig() void
+        +DeleteConfig() void
+    }
+
+    class XAuthHandle {
+        <<鉴权服务>>
+        +LoginReq() void
+        +AddUserReq() void
+        +CheckTokenReq() void
+    }
+
+    class XLogHandle {
+        <<日志服务>>
+        +AddLogReq() void
+    }
+
+    class XDirHandle {
+        <<目录服务>>
+        +GetDirReq() void
+        +DeleteFileReq() void
+        +NewDirReq() void
+        +GetDiskInfoReq() void
+    }
+
+    class XUploadHandle {
+        <<上传服务>>
+        +UploadFileReq() void
+        +SendSliceReq() void
+        +UploadFileEndReq() void
+    }
+
+    class XDownloadHandle {
+        <<下载服务>>
+        +DownloadFileReq() void
+        +DownloadFileBegin() void
+        +DownloadSliceRes() void
+    }
+
+    XMsgEvent <|-- XServiceHandle
+    XServiceHandle <|-- XRouterHandle
+    XServiceHandle <|-- XRegisterHandle
+    XServiceHandle <|-- XConfigHandle
+    XServiceHandle <|-- XAuthHandle
+    XServiceHandle <|-- XLogHandle
+    XServiceHandle <|-- XDirHandle
+    XServiceHandle <|-- XUploadHandle
+    XServiceHandle <|-- XDownloadHandle
+</div>
+</div>
+
+<!-- ===== 网关路由流程 ===== -->
+<div class="section">
+<h2>6. 网关消息路由流程</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Client as 客户端
+    participant Router as XRouterHandle
+    participant AuthProxy as XAuthProxy
+    participant SvcProxy as XServiceProxy
+    participant ProxyClient as XServiceProxyClient
+    participant Backend as 后端微服务
+
+    Client->>Router: Send (XMsgHead + body)
+    Router->>Router: ReadCB() 收到消息
+
+    alt 需鉴权的消息 (非 MSG_LOGIN_REQ)
+        Router->>AuthProxy: CheckToken(head)
+        AuthProxy-->>Router: 验证结果
+    end
+
+    Router->>SvcProxy: SendMsg(head, msg, router)
+    SvcProxy->>SvcProxy: 按 service_name 查找连接列表
+    SvcProxy->>SvcProxy: 轮询选择可用后端
+
+    SvcProxy->>ProxyClient: SendMsg(head, msg, ev)
+    ProxyClient->>ProxyClient: RegEvent(router) 注册回调
+    ProxyClient->>ProxyClient: head->msg_id = (long long)router
+    ProxyClient->>Backend: XMsgEvent::SendMsg(head, msg)
+
+    Backend-->>ProxyClient: 异步响应
+    ProxyClient->>ProxyClient: ReadCB()
+    ProxyClient->>ProxyClient: 按 msg_id 查找 callback_task_
+    ProxyClient->>Router: router->SendMsg(head, msg)
+    Router-->>Client: 回复客户端
+</div>
+</div>
+
+<!-- ===== 客户端启动流程 ===== -->
+<div class="section">
+<h2>7. 云盘客户端启动流程</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Main as main()
+    participant FM as XMSFileManager
+    participant AuthClient as XAuthClient
+    participant Login as LoginGUI
+    participant GW as 网关
+
+    Main->>FM: 创建 XMSFileManager 实例
+
+    Main->>Main: XGetHostByName("xms_gateway_server")<br/>解析网关IP
+
+    Main->>AuthClient: set_server_ip(gateway_ip)
+    Main->>AuthClient: set_server_port(20010)
+    Main->>AuthClient: StartConnect()
+    AuthClient-->>Main: 连接建立
+
+    Main->>Login: exec() 显示登录对话框
+
+    Login->>AuthClient: SendMsg(LOGIN_REQ, ...)
+    AuthClient->>GW: 转发登录请求
+    GW-->>AuthClient: 登录响应
+    AuthClient-->>Login: 登录结果
+
+    alt 登录成功
+        Main->>FM: InitFileManager(gateway_ip, port)
+        Main->>FM: set_login(login_info)
+        Main->>Main: 创建 XMSDiskClientGui(w)
+        Main->>Main: w.show()
+        Main->>Main: QApplication::exec()
+    else 取消登录
+        Main->>Main: return -1
+    end
+</div>
+</div>
+
+<!-- ===== 线程模型 ===== -->
+<div class="section">
+<h2>8. 线程模型</h2>
+<div class="mermaid">
+graph TB
+    subgraph 线程池[XThreadPool]
+        DISPATCH["Dispatch() 轮询分发"]
+    end
+
+    subgraph Thread1["线程 1"]
+        EV1["event_base<br/>事件循环"]
+        TASK1["任务 A"]
+        TASK2["任务 B"]
+    end
+
+    subgraph Thread2["线程 2"]
+        EV2["event_base<br/>事件循环"]
+        TASK3["任务 C"]
+    end
+
+    subgraph ThreadN["线程 N"]
+        EVN["event_base<br/>事件循环"]
+        TASKN["任务 ..."]
+    end
+
+    DISPATCH -.->|轮询| Thread1
+    DISPATCH -.->|轮询| Thread2
+    DISPATCH -.->|轮询| ThreadN
+
+    subgraph 激活机制[线程激活机制]
+        SOCKETPAIR["socketpair (Windows)<br/>或 pipe (Linux)"]
+        NOTIFY["NotifyCB 回调<br/>从任务队列取任务<br/>调用 XTask::Init()"]
+    end
+
+    EV1 -.-> SOCKETPAIR
+    SOCKETPAIR -.-> NOTIFY
+
+    note["每个线程拥有独立 event_base<br/>主循环: event_base_loop(NONBLOCK) + sleep(1ms)<br/>监听线程 + 工作线程分离"]
+</div>
+</div>
+
+<!-- ===== 文件上传流程 ===== -->
+<div class="section">
+<h2>9. 文件上传流程</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Client as 客户端
+    participant GW as 网关
+    participant Upload as 上传服务
+
+    Client->>GW: UPLOAD_FILE_REQ (XFileInfo)
+    GW->>GW: 路由到上传服务
+    GW->>Upload: 转发请求
+    Upload-->>GW: UPLOAD_FILE_RES (确认接收)
+    GW-->>Client: 转发响应
+
+    loop 每个文件片
+        Client->>GW: SEND_SLICE_REQ (XFileSlice + 数据)
+        GW->>Upload: 转发文件片
+        Upload->>Upload: 写入 ofstream
+        Upload-->>GW: SEND_SLICE_RES (确认)
+        GW-->>Client: 转发确认
+    end
+
+    Client->>GW: UPLOAD_FILE_END_REQ (完成)
+    GW->>Upload: 转发
+    Upload->>Upload: 验证MD5, 关闭文件
+    Upload-->>GW: UPLOAD_FILE_END_RES
+    GW-->>Client: 上传完成
+
+    Note over Client,Upload: 支持 AES 加密传输<br/>支持断点续传 (offset)
+</div>
+</div>
+
+<!-- ===== 模块依赖 ===== -->
+<div class="section">
+<h2>10. 模块依赖关系</h2>
+<div class="mermaid">
+graph LR
+    subgraph 基础库
+        XPLAT[xplatform.lib]
+        LXMYSQL[LXMysql.lib]
+    end
+
+    subgraph 基础设施
+        REG[register_server.exe]
+        CONF[config_server.exe]
+        AUTH[xauth_server.exe]
+        XLOG[xlog_server.exe]
+    end
+
+    subgraph 业务
+        GW[xms_gateway.exe]
+        DIR[xms_dir_service.exe]
+        UPLOAD[xms_upload_service.exe]
+        DOWN[xms_download_service.exe]
+    end
+
+    subgraph 客户端
+        DGUI[xms_disk_client_gui.exe]
+        CGUI[config_gui.exe]
+        CCLI[config_client.exe]
+        RCLI[register_client.exe]
+    end
+
+    XPLAT --> REG
+    XPLAT --> CONF
+    XPLAT --> AUTH
+    XPLAT --> XLOG
+    XPLAT --> GW
+    XPLAT --> DIR
+    XPLAT --> UPLOAD
+    XPLAT --> DOWN
+    XPLAT --> DGUI
+    XPLAT --> CGUI
+    XPLAT --> CCLI
+    XPLAT --> RCLI
+
+    LXMYSQL --> CONF
+    LXMYSQL --> AUTH
+    LXMYSQL --> XLOG
+</div>
+</div>
+
+<!-- ===== Protobuf 消息类型 ===== -->
+<div class="section">
+<h2>11. Protobuf 消息类型汇总</h2>
+<table class="proto-table">
+<tr><th>ID</th><th>名称</th><th>请求消息</th><th>响应消息</th><th>说明</th></tr>
+<tr><td>1</td><td>MSG_LOGIN</td><td>XLoginReq</td><td>XLoginRes</td><td>用户登录</td></tr>
+<tr><td>3</td><td>MSG_DIR</td><td>XDirReq</td><td>XDirRes</td><td>目录列表</td></tr>
+<tr><td>5</td><td>MSG_REGISTER</td><td>XRegisterReq</td><td>XMessageRes</td><td>服务注册</td></tr>
+<tr><td>7</td><td>MSG_GET_SERVICE</td><td>XGetServiceReq</td><td>XServiceMap</td><td>服务发现</td></tr>
+<tr><td>9</td><td>MSG_SAVE_CONFIG</td><td>XConfig</td><td>XMessageRes</td><td>保存配置</td></tr>
+<tr><td>11</td><td>MSG_LOAD_CONFIG</td><td>XLoadConfigReq</td><td>XConfig</td><td>加载配置</td></tr>
+<tr><td>13</td><td>MSG_LOAD_ALL_CONFIG</td><td>XLoadAllConfigReq</td><td>XConfigList</td><td>配置列表(分页)</td></tr>
+<tr><td>15</td><td>MSG_DEL_CONFIG</td><td>XLoadConfigReq</td><td>XMessageRes</td><td>删除配置</td></tr>
+<tr><td>17</td><td>MSG_ADD_USER</td><td>XAddUserReq</td><td>XMessageRes</td><td>添加用户</td></tr>
+<tr><td>19</td><td>MSG_CHANGE_PASSWORD</td><td>XChangePasswordReq</td><td>XMessageRes</td><td>修改密码</td></tr>
+<tr><td>209</td><td>MSG_CHECK_TOKEN</td><td>XMessageRes</td><td>XMessageRes</td><td>验证Token</td></tr>
+<tr><td>211</td><td>MSG_ADD_LOG</td><td>XAddLogReq</td><td>-</td><td>添加日志</td></tr>
+<tr><td>65532</td><td>MSG_GET_OUT_SERVICE</td><td>XGetServiceReq</td><td>XServiceList</td><td>获取外部服务</td></tr>
+<tr><td>65534</td><td>MSG_HEART</td><td>XMsgHeart</td><td>-</td><td>心跳</td></tr>
+<tr><td colspan="5" style="background:#f0f0f0;font-weight:bold;text-align:center;">业务消息 (xms_disk_client_gui.proto)</td></tr>
+<tr><td>1001</td><td>GET_DIR</td><td>XGetDirReq</td><td>XFileInfoList</td><td>获取目录(业务)</td></tr>
+<tr><td>1003-1009</td><td>UPLOAD_FILE</td><td>XFileInfo/XFileSlice</td><td>XFileSlice/XMessageRes</td><td>文件上传系列</td></tr>
+<tr><td>1010-1013</td><td>DOWNLOAD_FILE</td><td>XFileInfo/XFileSlice</td><td>XFileSlice/XFileInfo</td><td>文件下载系列</td></tr>
+<tr><td>1014</td><td>DELETE_FILE</td><td>XFileSlice</td><td>XMessageRes</td><td>删除文件</td></tr>
+<tr><td>1016</td><td>NEW_DIR</td><td>XGetDirReq</td><td>XMessageRes</td><td>创建目录</td></tr>
+<tr><td>1018</td><td>GET_DISK_INFO</td><td>XMessageRes</td><td>XDiskInfo</td><td>磁盘信息</td></tr>
+</table>
+</div>
+
+<!-- ===== 服务启动流程 ===== -->
+<div class="section">
+<h2>12. 微服务标准启动流程</h2>
+<div class="flow-box">
+  <ol>
+    <li><strong>初始化数据库连接</strong> (如果需要) — DAO::Init()</li>
+    <li><strong>安装数据库表</strong> (首次运行) — DAO::Install()</li>
+    <li><strong>注册消息回调</strong> — XxxHandle::RegMsgCallback()</li>
+    <li><strong>XConfigAndRegister::Init()</strong> — 连接注册中心，注册本服务，获取配置</li>
+    <li><strong>创建 XService 子类</strong> — 设置监听端口</li>
+    <li><strong>service.Start()</strong> — 创建线程池，开始监听</li>
+    <li><strong>XThreadPool::Wait()</strong> — 阻塞等待</li>
+  </ol>
+  <p style="margin-top:8px;"><strong>注册中心交互:</strong> 服务启动 → 注册(service_name, ip, port) → 周期性获取配置 → 提供服务</p>
+</div>
+</div>
+
+<!-- ===== 项目文件清单 ===== -->
+<div class="section">
+<h2>13. 项目文件清单</h2>
+<div class="class-grid">
+<div class="class-card">
+<div class="name">📦 xplatform (核心框架)</div>
+<div class="desc">
+xapplication.h/cpp · xcom_task.h · xmsg.h · xmsg_event.h/cpp<br/>
+xservice.h/cpp · xservice_client.h/cpp · xservice_handle.h/cpp<br/>
+xthread.h/cpp · xthread_pool.h/cpp · xtask.h · xtools.h/cpp<br/>
+xssl.h/cpp · xssl_ctx.h/cpp · xlog_client.h · xmsg_com.pb.h/proto<br/>
+xmsg_type.pb.h/proto · watchdog.cpp
+</div>
+</div>
+<div class="class-card">
+<div class="name">📦 LXMysql (MySQL封装)</div>
+<div class="desc">LXMysql.h/cpp · LXData.h/cpp</div>
+</div>
+<div class="class-card">
+<div class="name">🚪 xms_gateway (API网关)</div>
+<div class="desc">
+xms_gateway.cpp · xrouter_server.h/cpp · xrouter_handle.h/cpp<br/>
+xservice_proxy.h/cpp · xservice_proxy_client.h/cpp · xauth_proxy.h/cpp
+</div>
+</div>
+<div class="class-card">
+<div class="name">📋 register_server (注册中心)</div>
+<div class="desc">register_server.cpp · xregister_server.h/cpp · xregister_handle.h/cpp</div>
+</div>
+<div class="class-card">
+<div class="name">⚙️ config_server (配置中心)</div>
+<div class="desc">config_server.cpp · xconfig_server.h/cpp · xconfig_handle.h/cpp · config_dao.h/cpp</div>
+</div>
+<div class="class-card">
+<div class="name">🔐 xauth_server (鉴权服务)</div>
+<div class="desc">xauth_server.cpp · xauth_handle.h/cpp · xauth_dao.h/cpp · xauth_client.h/cpp</div>
+</div>
+<div class="class-card">
+<div class="name">📝 xlog_server (日志服务)</div>
+<div class="desc">xlog.cpp · xlog_server.h/cpp · xlog_handle.h/cpp · xlog_dao.h/cpp</div>
+</div>
+<div class="class-card">
+<div class="name">📁 xms_dir_service (目录服务)</div>
+<div class="desc">xms_dir_service.cpp · xdir_service.h/cpp · xdir_handle.h/cpp</div>
+</div>
+<div class="class-card">
+<div class="name">⬆️ xms_upload_service (上传)</div>
+<div class="desc">xms_upload_service.cpp · xupload_server.h/cpp · xupload_handle.h/cpp</div>
+</div>
+<div class="class-card">
+<div class="name">⬇️ xms_download_service (下载)</div>
+<div class="desc">xms_download_service.cpp · xdownload_server.h/cpp · xdownload_handle.h/cpp</div>
+</div>
+<div class="class-card">
+<div class="name">🖥️ xms_disk_client_gui (云盘GUI)</div>
+<div class="desc">
+main.cpp · xmsdiskclientgui.h/cpp · logingui.h/cpp · filepassword.h/cpp<br/>
+xfile_manager.h/cpp · xms_file_manager.h/cpp · file_manager.h/cpp<br/>
+xauth_client.h/cpp · xget_dir_client.h/cpp · xupload_client.h/cpp<br/>
+xdownload_client.h/cpp · xupload_proxy.h/cpp · task_list_gui.h/cpp · taskitemgui.h/cpp
+</div>
+</div>
+<div class="class-card">
+<div class="name">🖥️ config_gui (配置GUI)</div>
+<div class="desc">main.cpp · config_gui.h/cpp · config_edit.h/cpp · login_gui.h/cpp</div>
+</div>
+<div class="class-card">
+<div class="name">🖥️ 工具客户端</div>
+<div class="desc">
+config_client.cpp · xconfig_client.h/cpp · xconfig_manager.h/cpp<br/>
+register_client.cpp · xregister_client.h/cpp · xms_add_user.cpp<br/>
+xconfig_and_register.h/cpp
+</div>
+</div>
+<div class="class-card">
+<div class="name">📜 Protobuf</div>
+<div class="desc">xmsg_type.proto · xmsg_com.proto · xms_disk_client_gui.proto</div>
+</div>
+</div>
+</div>
+
+<div class="footer">
+  文档自动生成 — XMS 安全云盘微服务项目架构分析 — 2026-05-27<br/>
+  技术栈: C++ · libevent · Protobuf · OpenSSL · MySQL · Qt6
+</div>
+
+<script>
+mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    flowchart: { useMaxWidth: true, htmlLabels: true },
+    sequence: { useMaxWidth: true },
+    classDiagram: { useMaxWidth: true }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/xplatform",
+                "${workspaceFolder}/register_client",
+                "${workspaceFolder}/register_server",
+                "${workspaceFolder}/config_client",
+                "${workspaceFolder}/config_server",
+                "${workspaceFolder}/config_gui",
+                "${workspaceFolder}/xauth",
+                "${workspaceFolder}/xms_disk_client_gui",
+                "${workspaceFolder}/xms_gateway",
+                "${workspaceFolder}/xms_dir_service",
+                "${workspaceFolder}/xms_upload_service",
+                "${workspaceFolder}/xms_download_service",
+                "${workspaceFolder}/xdisk_pb",
+                "${workspaceFolder}/xlog",
+                "${workspaceFolder}/LXMysql",
+                "${workspaceFolder}/xms_add_user",
+                // 外部依赖 - protobuf, openssl, libevent, absl, zlib
+                "D:/Code/cpp/xms/include",
+                "D:/Code/cpp/xms/include/google",
+                "D:/Code/cpp/xms/include/openssl",
+                "D:/Code/cpp/xms/include/absl",
+                // MySQL
+                "D:/Code/cpp/xms/mysql_code/include",
+                // Qt (msvc2022 64-bit)
+                "D:/Code/qt/6.11.0/msvc2022_64/include",
+                "D:/Code/qt/6.11.0/msvc2022_64/include/QtCore",
+                "D:/Code/qt/6.11.0/msvc2022_64/include/QtGui",
+                "D:/Code/qt/6.11.0/msvc2022_64/include/QtWidgets"
+            ],
+            "defines": [
+                "WIN32",
+                "_DEBUG",
+                "_CONSOLE",
+                "_CRT_SECURE_NO_WARNINGS",
+                "_SCL_SECURE_NO_WARNINGS",
+                "WIN32_LEAN_AND_MEAN",
+                "XCOM_EXPORTS",
+                "LXMYSQL_EXPORTS",
+                "_WINDOWS",
+                "_USRDLL",
+                "PROTOBUF_USE_DLLS"
+            ],
+            "compilerPath": "cl.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "msvc-x64",
+            "configurationProvider": "ms-vscode.cmake-tools",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/**",
+                    "D:/Code/cpp/xms/include",
+                    "D:/Code/cpp/xms/mysql_code/include"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": "${workspaceFolder}/.vscode/browse.vc.db"
+            }
+        },
+        {
+            "name": "x64",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/xplatform",
+                "${workspaceFolder}/register_client",
+                "${workspaceFolder}/register_server",
+                "${workspaceFolder}/config_client",
+                "${workspaceFolder}/config_server",
+                "${workspaceFolder}/config_gui",
+                "${workspaceFolder}/xauth",
+                "${workspaceFolder}/xms_disk_client_gui",
+                "${workspaceFolder}/xms_gateway",
+                "${workspaceFolder}/xms_dir_service",
+                "${workspaceFolder}/xms_upload_service",
+                "${workspaceFolder}/xms_download_service",
+                "${workspaceFolder}/xdisk_pb",
+                "${workspaceFolder}/xlog",
+                "${workspaceFolder}/LXMysql",
+                "${workspaceFolder}/xms_add_user",
+                // 外部依赖
+                "D:/Code/cpp/xms/include",
+                "D:/Code/cpp/xms/include/google",
+                "D:/Code/cpp/xms/include/openssl",
+                "D:/Code/cpp/xms/include/absl",
+                // MySQL
+                "D:/Code/cpp/xms/mysql_code/include",
+                // Qt (msvc2022 64-bit)
+                "D:/Code/qt/6.11.0/msvc2022_64/include",
+                "D:/Code/qt/6.11.0/msvc2022_64/include/QtCore",
+                "D:/Code/qt/6.11.0/msvc2022_64/include/QtGui",
+                "D:/Code/qt/6.11.0/msvc2022_64/include/QtWidgets"
+            ],
+            "defines": [
+                "_DEBUG",
+                "_CONSOLE",
+                "_CRT_SECURE_NO_WARNINGS",
+                "_SCL_SECURE_NO_WARNINGS",
+                "WIN32_LEAN_AND_MEAN",
+                "XCOM_EXPORTS",
+                "LXMYSQL_EXPORTS",
+                "_WINDOWS",
+                "_USRDLL",
+                "PROTOBUF_USE_DLLS"
+            ],
+            "compilerPath": "cl.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "msvc-x64",
+            "configurationProvider": "ms-vscode.cmake-tools",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/**",
+                    "D:/Code/cpp/xms/include",
+                    "D:/Code/cpp/xms/mysql_code/include"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": "${workspaceFolder}/.vscode/browse.vc.db"
+            }
+        }
+    ],
+    "version": 4
+}

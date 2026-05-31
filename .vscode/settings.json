@@ -1,0 +1,62 @@
+{
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.default.intelliSenseMode": "msvc-x64",
+    "C_Cpp.errorSquiggles": "enabled",
+    "C_Cpp.autocomplete": "default",
+    "C_Cpp.formatting": "default",
+    "C_Cpp.default.cppStandard": "c++17",
+    "C_Cpp.default.cStandard": "c17",
+    "C_Cpp.updateChannel": "Insiders",
+    "C_Cpp.intelliSenseEngine": "default",
+    "clangd.enabled": false,
+    "files.associations": {
+        "*.h": "cpp",
+        "*.proto": "proto3"
+    },
+    "editor.formatOnSave": false,
+    "editor.minimap.enabled": true,
+    "editor.renderWhitespace": "boundary",
+    "search.exclude": {
+        "**/.vscode": true,
+        "**/bin": true,
+        "**/lib": true,
+        "*.pb.*": true
+    },
+    "files.exclude": {
+        "**/.vscode": false,
+        "**/__pycache__": true,
+        "**/.git": true
+    },
+    "terminal.integrated.defaultProfile.windows": "VS + Qt Developer Command Prompt",
+    "terminal.integrated.profiles.windows": {
+        "Command Prompt": {
+            "path": "${env:COMSPEC}",
+            "args": [],
+            "icon": "terminal-cmd"
+        },
+        "Visual Studio Developer Command Prompt": {
+            "path": "${env:COMSPEC}",
+            "args": [
+                "/k",
+                "\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Professional\\VC\\Auxiliary\\Build\\vcvarsall.bat\"",
+                "x86"
+            ],
+            "icon": "visual-studio"
+        },
+        "VS + Qt Developer Command Prompt": {
+            "path": "${env:COMSPEC}",
+            "args": [
+                "/k",
+                "\"${workspaceFolder}\\.vscode\\vs_qt_init.cmd\""
+            ],
+            "icon": "pulse"
+        }
+    },
+    "terminal.integrated.env.windows": {
+        "Qt6_DIR": "D:\\Code\\qt\\6.11.0\\msvc2022_64\\lib\\cmake\\Qt6"
+    },
+    "cmake.configureSettings": {
+        "CMAKE_PREFIX_PATH": "D:\\Code\\qt\\6.11.0\\msvc2022_64",
+        "Qt6_DIR": "D:\\Code\\qt\\6.11.0\\msvc2022_64\\lib\\cmake\\Qt6"
+    }
+}

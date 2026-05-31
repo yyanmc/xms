@@ -1,0 +1,491 @@
+================================================================================
+          C++ 微服务架构安全云盘项目 — 部署方案文档
+================================================================================
+
+文档版本: 1.0
+生成日期: 2026-05-27
+目标平台: Windows 10/11 (x86/x64), MSVC 2022 (v143)
+
+================================================================================
+一、环境要求
+================================================================================
+
+1.1 开发工具
+  - Visual Studio 2022 Professional/Community (v143 工具集)
+    - 需要安装 "使用 C++ 的桌面开发" 工作负载
+    - 若编译 Qt GUI 项目还需要 Qt VS Tools 扩展
+  - Qt 6.11.0 MSVC 2022 64-bit (位于 D:\Code\qt\6.11.0\msvc2022_64)
+  - Git (用于版本管理)
+  - Python 3.x (可选, 用于辅助脚本)
+
+1.2 第三方依赖库 (已预编译, 位于 D:\Code\cpp\xms\)
+  ├─ libevent          — 异步网络框架 (libevent.lib, libevent_core.lib)
+  ├─ Google Protobuf   — 数据序列化 (libprotobuf.lib / libprotobufd.lib)
+  ├─ OpenSSL           — SSL/TLS 加密通信 (libssl.lib, libcrypto.lib)
+  ├─ MySQL Connector/C — 数据库连接 (libmysql.lib)
+  ├─ zlib              — 压缩 (zlib.lib)
+  ├─ Abseil            — C++ 基础库 (absl_*.lib, Protobuf 依赖)
+  └─ Qt 6.11.0         — GUI 框架 (仅 config_gui, xms_disk_client_gui)
+
+1.3 MySQL 数据库
+  - MySQL Server 5.7+ (推荐 8.0)
+  - 需要创建三个数据库:
+    ├─ xms_config    — 配置中心数据
+    ├─ xms_auth      — 用户鉴权数据
+    └─ xms_log       — 日志数据
+
+1.4 hosts 文件配置
+  文件位置: C:\Windows\System32\drivers\etc\hosts
+  需要添加以下记录 (根据实际部署IP修改):
+  ┌──────────────────────────────────────────────────────────────┐
+  │ # XMS 微服务 (部署服务器IP, 假设单机部署 127.0.0.1)         │
+  │ 127.0.0.1 xms_gateway_server                                │
+  │ 127.0.0.1 xms_register_server                               │
+  └──────────────────────────────────────────────────────────────┘
+  说明: 代码中通过 XGetHostByName() 函数读取 hosts 文件解析域名
+
+================================================================================
+二、构建方案
+================================================================================
+
+2.1 构建架构说明
+  ┌──────────────────────────────────────────────────────────────┐
+  │ 主构建平台: Win32 (x86)                                      │
+  │ 构建配置: Debug / Release                                    │
+  │ 默认配置: Debug|Win32                                        │
+  │ 工具集: MSVC v143 (VS 2022)                                  │
+  └──────────────────────────────────────────────────────────────┘
+
+  项目中所有 .vcxproj 同时支持:
+  ├─ Debug|Win32
+  ├─ Release|Win32
+  ├─ Debug|x64
+  └─ Release|x64
+
+2.2 项目构建顺序 (严格的依赖关系)
+  ┌──────┬────────────────────────┬──────────────────┬──────────┐
+  │ 顺序  │ 项目                   │ 输出类型          │ 依赖     │
+  ├──────┼────────────────────────┼──────────────────┼──────────┤
+  │  1   │ LXMysql                │ 静态库(.lib)      │ MySQL C  │
+  │  2   │ xplatform              │ 静态库(.lib)      │ libevent │
+  │      │                        │                  │ protobuf │
+  │      │                        │                  │ openssl  │
+  │  3   │ register_server        │ 可执行文件(.exe)  │ xplatform│
+  │  4   │ config_server          │ 可执行文件(.exe)  │ LXMysql  │
+  │      │                        │                  │ xplatform│
+  │  5   │ xauth_server           │ 可执行文件(.exe)  │ LXMysql  │
+  │      │                        │                  │ xplatform│
+  │  6   │ xlog_server            │ 可执行文件(.exe)  │ LXMysql  │
+  │      │                        │                  │ xplatform│
+  │  7   │ xms_gateway            │ 可执行文件(.exe)  │ xplatform│
+  │  8   │ xms_dir_service        │ 可执行文件(.exe)  │ xplatform│
+  │  9   │ xms_upload_service     │ 可执行文件(.exe)  │ xplatform│
+  │ 10   │ xms_download_service   │ 可执行文件(.exe)  │ xplatform│
+  │ 11   │ xms_disk_client_gui    │ 可执行文件(Qt)    │ xplatform│
+  │      │                        │                  │ Qt6      │
+  │ 12   │ config_gui             │ 可执行文件(Qt)    │ xplatform│
+  │      │                        │                  │ Qt6      │
+  │ 13   │ config_client          │ 可执行文件(.exe)  │ xplatform│
+  │ 14   │ register_client        │ 可执行文件(.exe)  │ xplatform│
+  │ 15   │ xms_add_user           │ 可执行文件(.exe)  │ xplatform│
+  │      │                        │ (无 .vcxproj)     │          │
+  └──────┴────────────────────────┴──────────────────┴──────────┘
+
+2.3 使用 Visual Studio 构建
+  A) 分别打开每个 .sln 文件, 按顺序构建
+  B) 或使用单独项目 .vcxproj 构建:
+     msbuild /p:Configuration=Debug /p:Platform=Win32 LXMysql\LXMysql.vcxproj
+     msbuild /p:Configuration=Debug /p:Platform=Win32 xplatform\xplatfrom.vcxproj
+
+2.4 使用命令行一键构建 (Developer Command Prompt)
+  需要在 "VS 2022 Developer Command Prompt" 或已执行 vcvarsall.bat
+  的环境中执行:
+
+  ┌──────────────────────────────────────────────────────────────┐
+  │ # 设置环境变量                                                │
+  │ set XMS_ROOT=D:\Code\cpp\C++微服务架构及安全云盘项目\xms0.1.1 │
+  │ set BUILD_CFG=Debug                                           │
+  │ set BUILD_PLAT=Win32                                          │
+  │                                                               │
+  │ # 1. 构建 LXMysql                                             │
+  │ msbuild %XMS_ROOT%\LXMysql\LXMysql.vcxproj                    │
+  │   /p:Configuration=%BUILD_CFG% /p:Platform=%BUILD_PLAT%       │
+  │                                                               │
+  │ # 2. 构建 xplatform                                           │
+  │ msbuild %XMS_ROOT%\xplatform\xplatfrom.vcxproj                │
+  │   /p:Configuration=%BUILD_CFG% /p:Platform=%BUILD_PLAT%       │
+  │                                                               │
+  │ # 3. 构建所有服务 (按依赖顺序)                                 │
+  │ for %%p in (                                                  │
+  │   register_server config_server xauth_server xlog_server      │
+  │   xms_gateway xms_dir_service xms_upload_service              │
+  │   xms_download_service config_client register_client          │
+  │ ) do (                                                        │
+  │   msbuild %XMS_ROOT%\%%p\%%p.vcxproj                          │
+  │     /p:Configuration=%BUILD_CFG% /p:Platform=%BUILD_PLAT%     │
+  │ )                                                             │
+  │                                                               │
+  │ # 4. 构建 Qt GUI 项目 (需要 Qt VS Tools 或 CMake)             │
+  │ msbuild %XMS_ROOT%\xms_disk_client_gui\xms_disk_client_gui.vcxproj │
+  │   /p:Configuration=%BUILD_CFG% /p:Platform=%BUILD_PLAT%       │
+  └──────────────────────────────────────────────────────────────┘
+
+2.5 输出目录结构 (Debug|Win32 为例)
+  每个项目输出到各自的项目目录下的相应平台目录:
+  ┌──────────────────────────────────────────────────────────────┐
+  │ xms0.1.1/                                                    │
+  │ ├─ register_server/Win32/Debug/register_server.exe           │
+  │ ├─ config_server/Win32/Debug/config_server.exe               │
+  │ ├─ xauth/Win32/Debug/xauth_server.exe                        │
+  │ ├─ xlog/Win32/Debug/xlog_server.exe                          │
+  │ ├─ xms_gateway/Win32/Debug/xms_gateway.exe                   │
+  │ ├─ xms_dir_service/Win32/Debug/xms_dir_service.exe           │
+  │ ├─ xms_upload_service/Win32/Debug/xms_upload_service.exe     │
+  │ ├─ xms_download_service/Win32/Debug/xms_download_service.exe │
+  │ ├─ xms_disk_client_gui/Win32/Debug/xms_disk_client_gui.exe   │
+  │ ├─ config_gui/Win32/Debug/config_gui.exe                     │
+  │ ├─ ...                                                       │
+  │ └─ lib/x86/                                                  │
+  │      ├─ LXMysql.lib        (LXMysql 输出)                    │
+  │      ├─ xplatform_d.lib     (xplatform Debug输出)            │
+  │      └─ XCOM.lib            (xplatform Release输出)          │
+  └──────────────────────────────────────────────────────────────┘
+
+================================================================================
+三、运行时依赖 (DLL 清单)
+================================================================================
+
+3.1 所有服务都需要的基础 DLL
+  ┌──────────────────────┬────────────────────────────────────────┐
+  │ DLL 文件             │ 来源路径                                │
+  ├──────────────────────┼────────────────────────────────────────┤
+  │ libprotobuf.dll      │ D:\Code\cpp\xms\bin\                   │
+  │ libssl.dll           │ 系统/OpenSSL 安装目录                   │
+  │ libcrypto.dll        │ 系统/OpenSSL 安装目录                   │
+  │ xplatform_d.dll      │ D:\Code\cpp\xms\bin\ (Debug模式)       │
+  │                      │ (如果 xplatform 构建为 DLL)             │
+  │ MSVC CRT DLLs        │ 系统自带或安装 VC++ Redistributable    │
+  └──────────────────────┴────────────────────────────────────────┘
+
+  注意:
+  - Debug 构建依赖 libprotobufd.dll (debug版本的protobuf)
+  - Release 构建依赖 libprotobuf.dll
+  - 如果 xplatform 配置为静态库(.lib), 则不需要 xplatform_d.dll
+
+3.2 需要 MySQL 的服务额外依赖
+  ┌──────────────────────┬────────────────────────────────────────┐
+  │ DLL 文件             │ 来源路径                                │
+  ├──────────────────────┼────────────────────────────────────────┤
+  │ libmysql.dll         │ D:\Code\cpp\xms\mysql_code\bin\        │
+  └──────────────────────┴────────────────────────────────────────┘
+  - config_server.exe 需要 libmysql.dll
+  - xauth_server.exe  需要 libmysql.dll
+  - xlog_server.exe   需要 libmysql.dll
+
+3.3 Qt GUI 项目额外依赖
+  ┌──────────────────────────────────────────────────────────────┐
+  │ Qt6 运行库 (位于 D:\Code\qt\6.11.0\msvc2022_64\bin\)        │
+  │ 需要添加 PATH 或复制到应用程序目录:                           │
+  │ ├─ Qt6Core.dll                                               │
+  │ ├─ Qt6Gui.dll                                                │
+  │ ├─ Qt6Widgets.dll                                            │
+  │ ├─ Qt6Network.dll                                            │
+  │ ├─ Qt6Svg.dll (可选)                                         │
+  │ └─ 相应的平台插件 (platforms/qwindows.dll)                   │
+  └──────────────────────────────────────────────────────────────┘
+
+================================================================================
+四、服务部署与启动
+================================================================================
+
+4.1 单机完整部署结构
+
+  部署目录示例 (D:\xms_deploy\):
+  ┌──────────────────────────────────────────────────────────────┐
+  │ D:\xms_deploy\                                               │
+  │ ├─ bin\                            # 所有可执行文件 + DLL    │
+  │ │   ├─ register_server.exe                                   │
+  │ │   ├─ config_server.exe                                     │
+  │ │   ├─ xauth_server.exe                                      │
+  │ │   ├─ xlog_server.exe                                       │
+  │ │   ├─ xms_gateway.exe                                       │
+  │ │   ├─ xms_dir_service.exe                                   │
+  │ │   ├─ xms_upload_service.exe                                │
+  │ │   ├─ xms_download_service.exe                              │
+  │ │   ├─ libprotobuf.dll                                       │
+  │ │   ├─ libssl.dll                                            │
+  │ │   ├─ libcrypto.dll                                         │
+  │ │   ├─ libmysql.dll                                          │
+  │ │   └─ (Qt6 DLLs 如需GUI)                                    │
+  │ ├─ conf\                             # 配置文件              │
+  │ │   └─ xms.ini                     # 框架配置文件            │
+  │ ├─ data\                             # 数据目录              │
+  │ │   ├─ config\                     # 配置服务数据            │
+  │ │   ├─ files\                      # 用户文件存储            │
+  │ │   │   ├─ upload\                 # 上传文件目录            │
+  │ │   │   └─ download\               # 下载缓存目录            │
+  │ │   └─ logs\                       # 本地日志文件            │
+  │ ├─ scripts\                         # 启动脚本               │
+  │ │   ├─ start_all.bat              # 一键启动所有服务         │
+  │ │   ├─ stop_all.bat               # 停止所有服务             │
+  │ │   └─ install_db.bat             # 初始化数据库             │
+  │ └─ cert\                            # SSL 证书 (可选)        │
+  │     ├─ server.crt                                            │
+  │     └─ server.key                                           │
+  └──────────────────────────────────────────────────────────────┘
+
+4.2 服务启动顺序 (严格)
+  ┌─────┬──────────────────────┬──────────┬──────────────────────┐
+  │ 步骤 │ 服务                 │ 端口     │ 启动命令              │
+  ├─────┼──────────────────────┼──────────┼──────────────────────┤
+  │  1  │ 配置 hosts           │ -        │ 编辑 hosts 文件      │
+  │  2  │ MySQL Server         │ 3306     │ net start MySQL80    │
+  │  3  │ 初始化数据库         │ -        │ 运行 install_db.bat  │
+  │  4  │ register_server      │ 20018    │ register_server.exe  │
+  │  5  │ config_server        │ 20019    │ config_server.exe    │
+  │  6  │ xauth_server         │ 20020    │ xauth_server.exe     │
+  │  7  │ xlog_server          │ 20030    │ xlog_server.exe      │
+  │  8  │ xms_dir_service      │ 20300    │ xms_dir_service.exe  │
+  │  9  │ xms_upload_service   │ 20100    │ xms_upload_service   │
+  │ 10  │ xms_download_service │ 20200    │ xms_download_service │
+  │ 11  │ xms_gateway          │ 20010    │ xms_gateway.exe      │
+  │ 12  │ 桌面客户端 (可选)    │ -        │ xms_disk_client_gui  │
+  └─────┴──────────────────────┴──────────┴──────────────────────┘
+
+4.3 启动脚本 (start_all.bat)
+  ┌──────────────────────────────────────────────────────────────┐
+  │ @echo off                                                   │
+  │ set DEPLOY_DIR=D:\xms_deploy                                 │
+  │ set PATH=%DEPLOY_DIR%\bin;%PATH%                             │
+  │                                                              │
+  │ echo [1/9] 启动注册中心...                                   │
+  │ start "register_server" %DEPLOY_DIR%\bin\register_server.exe │
+  │ timeout /t 3                                                 │
+  │                                                              │
+  │ echo [2/9] 启动配置中心...                                   │
+  │ start "config_server" %DEPLOY_DIR%\bin\config_server.exe     │
+  │ timeout /t 2                                                 │
+  │                                                              │
+  │ echo [3/9] 启动鉴权服务...                                   │
+  │ start "auth_server" %DEPLOY_DIR%\bin\xauth_server.exe        │
+  │ timeout /t 2                                                 │
+  │                                                              │
+  │ echo [4/9] 启动日志服务...                                   │
+  │ start "log_server" %DEPLOY_DIR%\bin\xlog_server.exe          │
+  │ timeout /t 2                                                 │
+  │                                                              │
+  │ echo [5/9] 启动目录服务...                                   │
+  │ start "dir_service" %DEPLOY_DIR%\bin\xms_dir_service.exe     │
+  │ timeout /t 2                                                 │
+  │                                                              │
+  │ echo [6/9] 启动上传服务...                                   │
+  │ start "upload_service" %DEPLOY_DIR%\bin\xms_upload_service   │
+  │ timeout /t 2                                                 │
+  │                                                              │
+  │ echo [7/9] 启动下载服务...                                   │
+  │ start "download_service" %DEPLOY_DIR%\bin\xms_download_service│
+  │ timeout /t 2                                                 │
+  │                                                              │
+  │ echo [8/9] 启动API网关...                                    │
+  │ start "gateway" %DEPLOY_DIR%\bin\xms_gateway.exe             │
+  │ timeout /t 2                                                 │
+  │                                                              │
+  │ echo [9/9] 所有服务已启动!                                   │
+  │ echo 网关端口: 20010                                         │
+  │ echo 注册中心端口: 20018                                     │
+  │ echo 配置中心端口: 20019                                     │
+  └──────────────────────────────────────────────────────────────┘
+
+4.4 停止脚本 (stop_all.bat)
+  ┌──────────────────────────────────────────────────────────────┐
+  │ @echo off                                                   │
+  │ echo 正在停止所有 XMS 服务...                                │
+  │ taskkill /f /im xms_gateway.exe 2>nul                        │
+  │ taskkill /f /im xms_dir_service.exe 2>nul                    │
+  │ taskkill /f /im xms_upload_service.exe 2>nul                 │
+  │ taskkill /f /im xms_download_service.exe 2>nul               │
+  │ taskkill /f /im xlog_server.exe 2>nul                        │
+  │ taskkill /f /im xauth_server.exe 2>nul                       │
+  │ taskkill /f /im config_server.exe 2>nul                      │
+  │ taskkill /f /im register_server.exe 2>nul                    │
+  │ echo 所有服务已停止!                                         │
+  └──────────────────────────────────────────────────────────────┘
+
+4.5 分布式部署方案
+  可将各微服务部署到不同服务器:
+
+  ┌──────────┬──────────────────────┬─────────────┬─────────────┐
+  │ 服务器    │ 部署的服务            │ IP 示例      │ 所需防火墙   │
+  │           │                      │              │ 开放端口    │
+  ├──────────┼──────────────────────┼─────────────┼─────────────┤
+  │ 注册中心  │ register_server      │ 192.168.1.10│ 20018       │
+  │          │ + MySQL              │             │ 3306        │
+  ├──────────┼──────────────────────┼─────────────┼─────────────┤
+  │ 配置中心  │ config_server        │ 192.168.1.11│ 20019       │
+  ├──────────┼──────────────────────┼─────────────┼─────────────┤
+  │ 鉴权服务  │ xauth_server         │ 192.168.1.12│ 20020       │
+  ├──────────┼──────────────────────┼─────────────┼─────────────┤
+  │ 日志服务  │ xlog_server          │ 192.168.1.13│ 20030       │
+  ├──────────┼──────────────────────┼─────────────┼─────────────┤
+  │ 业务服务  │ xms_dir_service      │ 192.168.1.14│ 20300       │
+  │          │ xms_upload_service    │             │ 20100       │
+  │          │ xms_download_service  │             │ 20200       │
+  ├──────────┼──────────────────────┼─────────────┼─────────────┤
+  │ 网关      │ xms_gateway          │ 192.168.1.15│ 20010       │
+  ├──────────┼──────────────────────┼─────────────┼─────────────┤
+  │ 客户端    │ xms_disk_client_gui  │ 用户 PC     │ -           │
+  └──────────┴──────────────────────┴─────────────┴─────────────┘
+
+  分布式部署需配置 hosts 文件指向对应服务器:
+  ┌──────────────────────────────────────────────────────────────┐
+  │ # 每台服务器/客户端的 hosts 文件                              │
+  │ 192.168.1.15  xms_gateway_server                             │
+  │ 192.168.1.10  xms_register_server                            │
+  └──────────────────────────────────────────────────────────────┘
+
+================================================================================
+五、数据库初始化
+================================================================================
+
+5.1 安装 MySQL Server
+  下载: https://dev.mysql.com/downloads/mysql/
+  版本: MySQL 8.0 或 5.7
+  安装后确保 MySQL 服务正在运行
+
+5.2 创建数据库和用户
+  ┌──────────────────────────────────────────────────────────────┐
+  │ -- 登录 MySQL                                                │
+  │ mysql -u root -p                                             │
+  │                                                              │
+  │ -- 创建数据库                                                │
+  │ CREATE DATABASE IF NOT EXISTS xms_config DEFAULT CHARSET utf8;│
+  │ CREATE DATABASE IF NOT EXISTS xms_auth DEFAULT CHARSET utf8;  │
+  │ CREATE DATABASE IF NOT EXISTS xms_log DEFAULT CHARSET utf8;   │
+  │                                                              │
+  │ -- 创建专用用户 (可选)                                       │
+  │ CREATE USER 'xms'@'localhost' IDENTIFIED BY '123456';        │
+  │ GRANT ALL ON xms_config.* TO 'xms'@'localhost';              │
+  │ GRANT ALL ON xms_auth.* TO 'xms'@'localhost';                │
+  │ GRANT ALL ON xms_log.* TO 'xms'@'localhost';                 │
+  │ FLUSH PRIVILEGES;                                            │
+  └──────────────────────────────────────────────────────────────┘
+
+5.3 数据库初始化脚本 (install_db.bat)
+  各服务在首次启动时, 如果检测到表不存在会自动创建:
+  ┌──────────────────────────────────────────────────────────────┐
+  │ @echo off                                                    │
+  │ echo 初始化配置中心数据库...                                  │
+  │ start /wait config_server.exe install                        │
+  │ echo 初始化鉴权服务数据库...                                  │
+  │ start /wait xauth_server.exe install                         │
+  │ echo 初始化日志服务数据库...                                  │
+  │ start /wait xlog_server.exe install                          │
+  │ echo 数据库初始化完成!                                       │
+  └──────────────────────────────────────────────────────────────┘
+
+  说明: 每个服务都包含 DAO::Install() 方法自动创建所需的表结构。
+  在 main() 中首次调用 Init() 后即调用 Install()。
+
+================================================================================
+六、配置说明
+================================================================================
+
+6.1 数据库连接配置（位于相关 DAO 类）
+  ├─ config_dao:   默认连接 localhost:3306, root, 123456, xms_config
+  ├─ xauth_dao:    默认连接 localhost:3306, root, 123456, xms_auth
+  └─ xlog_dao:     默认连接 localhost:3306, root, 123456, xms_log
+
+  若需修改,需在对应 DAO 类的 Init() 方法中修改连接参数。
+
+6.2 服务端口配置
+  服务端口通过命令行参数传递: <exe_name> [port] [register_ip] [register_port]
+  ┌──────────────────────────────────────────────────────────────┐
+  │ # 示例: 修改网关端口和注册中心地址                            │
+  │ xms_gateway.exe 20010 192.168.1.10 20018                     │
+  │                                                              │
+  │ # 示例: 修改鉴权服务端口和注册中心地址                        │
+  │ xauth_server.exe 20020 192.168.1.10 20018                    │
+  └──────────────────────────────────────────────────────────────┘
+
+  默认端口定义在 xplatform/xmsg.h 中:
+  ├─ API_GATEWAY_PORT = 20010
+  ├─ REGISTER_PORT    = 20018
+  ├─ CONFIG_PORT      = 20019
+  ├─ AUTH_PORT        = 20020
+  ├─ XLOG_PORT        = 20030
+  ├─ UPLOAD_PORT      = 20100
+  ├─ DOWNLOAD_PORT    = 20200
+  └─ DIR_PORT         = 20300
+
+6.3 主机名配置
+  主机名定义在 xplatform/xmsg.h 中:
+  ├─ API_GATEWAY_SERVER_NAME  = "xms_gateway_server"
+  └─ API_REGISTER_SERVER_NAME = "xms_register_server"
+
+  需要映射到 hosts 文件中。
+
+================================================================================
+七、常见部署问题排查
+================================================================================
+
+7.1 启动后服务闪退
+  可能原因及解决方案:
+  ├─ DLL 缺失 → 将所有依赖 DLL 放到 exe 同目录或系统 PATH 中
+  ├─ 端口被占用 → 使用 netstat -ano | findstr 20018 检查端口
+  ├─ MySQL 连接失败 → 检查 MySQL 服务是否启动, 连接参数是否正确
+  └─ hosts 解析失败 → 检查 hosts 文件是否正确配置
+
+7.2 服务连接失败
+  ├─ 确保注册中心先启动, 其他服务后启动
+  ├─ 检查防火墙是否放行对应端口
+  ├─ 检查 hosts 文件中的域名解析
+  └─ 查看各服务控制台输出的诊断信息
+
+7.3 MySQL 连接问题
+  ├─ 确认 MySQL 服务运行: net start MySQL80
+  ├─ 确认用户权限: mysql -u root -p -e "SHOW DATABASES;"
+  └─ 检查 LXMysql Init() 中的连接参数
+
+7.4 编译错误
+  ├─ LNK1104: 找不到 .lib → 确保依赖库先构建完成
+  ├─ 找不到 include 文件 → 确保目录链接 include/ → xms/include 有效
+  ├─ Qt 相关错误 → 确保 Qt6 目录配置正确, Qt VS Tools 已安装
+  └─ /utf-8 编译警告 → 已在所有 .vcxproj 中添加该选项
+
+================================================================================
+八、部署清单检查表
+================================================================================
+
+  ┌──┬──────────────────────────────────────────────┬──────────┐
+  │  │ 检查项                                       │ 完成标记  │
+  ├──┼──────────────────────────────────────────────┼──────────┤
+  │ 1│ Visual Studio 2022 已安装                     │ [  ]     │
+  │ 2│ MSVC v143 工具集已安装                        │ [  ]     │
+  │ 3│ MySQL Server 已安装并运行                     │ [  ]     │
+  │ 4│ MySQL 数据库已创建 (xms_config/auth/log)      │ [  ]     │
+  │ 5│ hosts 文件已配置                             │ [  ]     │
+  │ 6│ 目录链接有效 (include/→xms/include/)          │ [  ]     │
+  │ 7│ LXMysql 构建成功                             │ [  ]     │
+  │ 8│ xplatform 构建成功                           │ [  ]     │
+  │ 9│ register_server 构建成功                     │ [  ]     │
+  │10│ config_server 构建成功                       │ [  ]     │
+  │11│ xauth_server 构建成功                        │ [  ]     │
+  │12│ xlog_server 构建成功                         │ [  ]     │
+  │13│ xms_gateway 构建成功                         │ [  ]     │
+  │14│ xms_dir_service 构建成功                     │ [  ]     │
+  │15│ xms_upload_service 构建成功                  │ [  ]     │
+  │16│ xms_download_service 构建成功                │ [  ]     │
+  │17│ 注册中心启动成功 (端口20018)                  │ [  ]     │
+  │18│ 配置中心启动成功 (端口20019)                  │ [  ]     │
+  │19│ 鉴权服务启动成功 (端口20020)                  │ [  ]     │
+  │20│ 日志服务启动成功 (端口20030)                  │ [  ]     │
+  │21│ 目录服务启动成功 (端口20300)                  │ [  ]     │
+  │22│ 上传服务启动成功 (端口20100)                  │ [  ]     │
+  │23│ 下载服务启动成功 (端口20200)                  │ [  ]     │
+  │24│ 网关启动成功 (端口20010)                     │ [  ]     │
+  │25│ GUI 客户端可正常登录                         │ [  ]     │
+  └──┴──────────────────────────────────────────────┴──────────┘
+
+================================================================================
+                          文档生成日期: 2026-05-27
+================================================================================

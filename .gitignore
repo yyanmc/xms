@@ -1,0 +1,30 @@
+# 构建产物
+x64/
+Debug/
+Release/
+*.o
+*.so
+*.a
+*.exe
+*.ilk
+*.pdb
+*.idb
+*.lastbuildstate
+*.tlog
+*.log
+
+# IDE
+.vs/
+*.suo
+*.user
+*.sdf
+*.aps
+.ipch/
+BROWSE.VC.DB*
+
+# 编辑器
+.claude/
+
+# 临时文件
+*~
+*.swp
