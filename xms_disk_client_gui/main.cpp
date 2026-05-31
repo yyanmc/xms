@@ -1,5 +1,6 @@
 #include "xmsdiskclientgui.h"
 #include <QtWidgets/QApplication>
+#include <QFont>
 //#include "file_manager.h"
 #include "xget_dir_client.h"
 #include "xupload_proxy.h"
@@ -13,6 +14,11 @@ int main(int argc, char *argv[])
 
     XMSFileManager xsm_fm;
     QApplication a(argc, argv);
+    // 设置支持中文的默认字体，解决中文乱码问题
+    QFont font = a.font();
+    font.setFamily(QString::fromUtf8("Microsoft YaHei"));
+    font.setPointSize(10);
+    a.setFont(font);
     /*
     FileManager::Get()->StartThread();*/
     ////网关地址 
