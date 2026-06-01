@@ -15,8 +15,8 @@ void XUploadServer::main(int argc, char *argv[])
     string register_ip = XGetHostByName(API_REGISTER_SERVER_NAME);
     string service_ip = "";  // empty = use connection source IP
 
-    if (argc > 1)
-        register_ip = argv[1];
+    if (register_ip.empty() && argc > 1)
+        register_ip = XGetHostByName(argv[1]);
     if (argc > 2)
         register_port = atoi(argv[2]);
     if (argc > 3)

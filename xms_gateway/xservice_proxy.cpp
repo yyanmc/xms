@@ -89,7 +89,8 @@ bool XServiceProxy::SendMsg(xmsg::XMsgHead *head, XMsg *msg,XMsgEvent *ev)
             if (!c->is_find() || !c->is_connected())
                 continue;
             auto ser = services.add_service();
-            ser->set_ip(c->server_ip());
+            // Docker环境下，外部客户端通过宿主机访问，返回127.0.0.1
+            ser->set_ip("127.0.0.1");
             ser->set_port(c->server_port());
         }
         head->set_msg_type(MSG_GET_OUT_SERVICE_RES);

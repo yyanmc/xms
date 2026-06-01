@@ -57,10 +57,10 @@ int main(int argc,char *argv[])
 
 
     string register_ip = "";
-    register_ip =  XGetHostByName(API_REGISTER_SERVER_NAME);
-    
-    if (argc > 2)
-        register_ip = argv[2];
+    register_ip = XGetHostByName(API_REGISTER_SERVER_NAME);
+
+    if (register_ip.empty() && argc > 2)
+        register_ip = XGetHostByName(argv[2]);
 
     if (register_ip.empty())
         register_ip = "127.0.0.1";

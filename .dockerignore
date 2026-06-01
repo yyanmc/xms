@@ -1,0 +1,48 @@
+# Git
+.git
+.gitignore
+.gitattributes
+*.md
+
+# Visual Studio
+.vs
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+*.rc
+*.res
+*.qrc
+*.ui
+
+# Qt GUI (Windows only, not for Docker)
+config_gui
+xms_disk_client_gui
+
+# Build artifacts
+x64
+Debug
+Release
+
+# Object files
+*.o
+*.obj
+
+# Temp files
+*.cache
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.tlog
+*.lastbuildstate
+*unsuccessfulbuild
+
+# IDE
+.idea
+*.swp
+*.swo
+*~
+
+# Docker
+docker_deploy.html

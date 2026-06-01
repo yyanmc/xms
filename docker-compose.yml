@@ -1,0 +1,175 @@
+version: "3.8"
+
+# ======================================================
+# XMS 微服务 - Docker Compose 部署
+# 包含 8 个微服务 + MySQL，按依赖顺序启动
+# ======================================================
+
+x-common-env: &common-env
+  DB_HOST: mysql
+  DB_PORT: 3306
+  DB_USER: root
+  DB_PASS: ${MYSQL_ROOT_PASSWORD:-123456}
+  MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+
+services:
+  # ==================== 数据库 ====================
+  mysql:
+    image: mysql:5.7
+    container_name: xms-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./conf/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    # ports:
+    #   - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - xms-net
+
+  # ==================== 注册中心 ====================
+  register:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: xms:latest
+    container_name: xms-register
+    restart: unless-stopped
+    command: register_server
+    ports:
+      - "20018:20018"
+    networks:
+      xms-net:
+        aliases:
+          - xms_register_server
+          - xms_gateway_server
+
+  # ==================== 配置中心 ====================
+  config:
+    image: xms:latest
+    container_name: xms-config
+    restart: unless-stopped
+    depends_on:
+      register:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    environment:
+      <<: *common-env
+      DB_NAME: xms_config
+    command: config_server register 20018 20019
+    networks:
+      - xms-net
+
+  # ==================== 认证服务 ====================
+  auth:
+    image: xms:latest
+    container_name: xms-auth
+    restart: unless-stopped
+    depends_on:
+      register:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    environment:
+      <<: *common-env
+      DB_NAME: xms_auth
+    command: xauth 20020 register 20018
+    networks:
+      - xms-net
+
+  # ==================== 日志服务 ====================
+  xlog:
+    image: xms:latest
+    container_name: xms-xlog
+    restart: unless-stopped
+    depends_on:
+      register:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    environment:
+      <<: *common-env
+      DB_NAME: xms_log
+    command: xlog register 20018 20030
+    networks:
+      - xms-net
+
+  # ==================== 目录服务 ====================
+  dir:
+    image: xms:latest
+    container_name: xms-dir
+    restart: unless-stopped
+    depends_on:
+      register:
+        condition: service_started
+    command: xms_dir_service
+    volumes:
+      - xms-data:/home/yan1/xms/server_root
+    networks:
+      - xms-net
+
+  # ==================== 上传服务 ====================
+  upload:
+    image: xms:latest
+    container_name: xms-upload
+    restart: unless-stopped
+    depends_on:
+      register:
+        condition: service_started
+    command: xms_upload register 20018 20100
+    ports:
+      - "20100:20100"
+    volumes:
+      - xms-data:/home/yan1/xms/server_root
+    networks:
+      - xms-net
+
+  # ==================== 下载服务 ====================
+  download:
+    image: xms:latest
+    container_name: xms-download
+    restart: unless-stopped
+    depends_on:
+      register:
+        condition: service_started
+    command: xms_download register 20018 20200
+    ports:
+      - "20200:20200"
+    volumes:
+      - xms-data:/home/yan1/xms/server_root
+    networks:
+      - xms-net
+
+  # ==================== API 网关 ====================
+  gateway:
+    image: xms:latest
+    container_name: xms-gateway
+    restart: unless-stopped
+    depends_on:
+      register:
+        condition: service_started
+      auth:
+        condition: service_started
+      dir:
+        condition: service_started
+    ports:
+      - "20010:20010"
+    command: xms_gateway 20010 register 20018
+    networks:
+      - xms-net
+
+networks:
+  xms-net:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  xms-data:

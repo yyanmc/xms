@@ -18,8 +18,8 @@ void XLogServer::main(int argc, char *argv[])
     int register_port = REGISTER_PORT;
     //string register_ip = "127.0.0.1";
     string register_ip = XGetHostByName(API_REGISTER_SERVER_NAME);
-    if (argc > 1)
-        register_ip = argv[1];
+    if (register_ip.empty() && argc > 1)
+        register_ip = XGetHostByName(argv[1]);
     if (argc > 2)
         register_port = atoi(argv[2]);
     if (argc > 3)
@@ -33,7 +33,7 @@ void XLogServer::main(int argc, char *argv[])
     XRegisterClient::Get()->set_server_port(register_port);
 
     //向注册中心注册
-    XRegisterClient::Get()->RegisterServer(CONFIG_NAME, service_port, 0);
+    XRegisterClient::Get()->RegisterServer(XLOG_NAME, service_port, 0);
 
     XLogClient::Get()->set_server_ip("127.0.0.1");
     XLogClient::Get()->set_server_port(service_port);
