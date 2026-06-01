@@ -15,9 +15,8 @@
 *.qrc
 *.ui
 
-# Qt GUI (Windows only, not for Docker)
-config_gui
-xms_disk_client_gui
+# Qt GUI clients (Windows only, not for Docker)
+clients/
 
 # Build artifacts
 x64
@@ -43,6 +42,3 @@ Release
 *.swp
 *.swo
 *~
-
-# Docker
-docker_deploy.html

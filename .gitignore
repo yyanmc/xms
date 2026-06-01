@@ -13,6 +13,9 @@ Release/
 *.tlog
 *.log
 
+# 预编译库 (Windows)
+lib/
+
 # IDE
 .vs/
 *.suo
@@ -28,3 +31,7 @@ BROWSE.VC.DB*
 # 临时文件
 *~
 *.swp
+
+# 生成文档
+*.html
+*.txt
