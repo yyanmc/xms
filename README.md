@@ -45,9 +45,9 @@
 | 序列化 | Protocol Buffers (protobuf) |
 | 数据库 | MySQL 5.7 |
 | 容器化 | Docker / Docker Compose |
-| GUI 客户端 | Qt 5 (Widgets) |
+| GUI 客户端 | Qt 6 (Widgets) |
 | 构建系统 | GNU Make (Linux), MSBuild (Windows) |
-| 密码学 | MD5 + Base64 (自定义 XMD5) |
+| 密码学 | OpenSSL（MD5 / SHA / Base64 / AES 加密） |
 
 ## 项目结构
 
@@ -197,7 +197,7 @@ sudo apt-get install -y \
 
 使用 Visual Studio 2022 打开客户端项目:
 
-1. 安装 Qt 5.15+ 和 Qt Visual Studio Tools
+1. 安装 Qt 6.x 和 Qt Visual Studio Tools
 2. 打开 `clients/config_gui/config_gui.sln` - 配置管理工具
 3. 打开 `clients/xms_disk_client_gui/xms_disk_client_gui.sln` - 网盘客户端
 
